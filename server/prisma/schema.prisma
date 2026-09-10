@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  dispatcher
+  technician
+}
+
+enum JobStatus {
+  new
+  scheduled
+  in_progress
+  completed
+  cancelled
+  invoiced
+}
+
+enum Priority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum InvoiceStatus {
+  draft
+  sent
+  paid
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  role         Role
+  phone        String?
+  createdAt    DateTime   @default(now()) @map("created_at")
+  assignedJobs Job[]      @relation("AssignedTechnician")
+  jobNotes     JobNote[]
+  jobPhotos    JobPhoto[] @relation("UploadedBy")
+
+  @@map("users")
+}
+
+model Customer {
+  id        String            @id @default(cuid())
+  name      String
+  phone     String?
+  email     String?
+  notes     String?
+  createdAt DateTime          @default(now()) @map("created_at")
+  locations ServiceLocation[]
+  jobs      Job[]
+
+  @@map("customers")
+}
+
+model ServiceLocation {
+  id         String   @id @default(cuid())
+  customerId String   @map("customer_id")
+  address    String
+  city       String
+  lat        Float?
+  lng        Float?
+  notes      String?
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  jobs       Job[]
+
+  @@map("service_locations")
+}
+
+model Job {
+  id                   String           @id @default(cuid())
+  title                String
+  description          String?
+  status               JobStatus        @default(new)
+  priority             Priority         @default(medium)
+  customerId           String           @map("customer_id")
+  locationId           String           @map("location_id")
+  assignedTechnicianId String?          @map("assigned_technician_id")
+  scheduledDate        DateTime?        @map("scheduled_date") @db.Date
+  scheduledTimeStart   String?          @map("scheduled_time_start")
+  scheduledTimeEnd     String?          @map("scheduled_time_end")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  startedAt            DateTime?        @map("started_at")
+  completedAt          DateTime?        @map("completed_at")
+  laborHours           Decimal?         @map("labor_hours") @db.Decimal(6, 2)
+  customer             Customer         @relation(fields: [customerId], references: [id])
+  location             ServiceLocation  @relation(fields: [locationId], references: [id])
+  assignedTechnician   User?            @relation("AssignedTechnician", fields: [assignedTechnicianId], references: [id])
+  notes                JobNote[]
+  photos               JobPhoto[]
+  partsUsed            PartUsed[]
+  invoices             Invoice[]
+
+  @@index([status])
+  @@index([assignedTechnicianId])
+  @@index([scheduledDate])
+  @@map("jobs")
+}
+
+model JobNote {
+  id        String   @id @default(cuid())
+  jobId     String   @map("job_id")
+  userId    String   @map("user_id")
+  noteText  String   @map("note_text")
+  createdAt DateTime @default(now()) @map("created_at")
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("job_notes")
+}
+
+model JobPhoto {
+  id         String   @id @default(cuid())
+  jobId      String   @map("job_id")
+  photoUrl   String   @map("photo_url")
+  uploadedBy String   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  uploader   User     @relation("UploadedBy", fields: [uploadedBy], references: [id])
+
+  @@map("job_photos")
+}
+
+model PartUsed {
+  id       String  @id @default(cuid())
+  jobId    String  @map("job_id")
+  partName String  @map("part_name")
+  quantity Int
+  unitCost Decimal @map("unit_cost") @db.Decimal(10, 2)
+  job      Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("parts_used")
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  jobId     String        @map("job_id")
+  amount    Decimal       @db.Decimal(10, 2)
+  status    InvoiceStatus @default(draft)
+  createdAt DateTime      @default(now()) @map("created_at")
+  job       Job           @relation(fields: [jobId], references: [id])
+
+  @@map("invoices")
+}

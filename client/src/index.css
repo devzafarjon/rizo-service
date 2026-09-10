@@ -1,0 +1,58 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-rizo: #b439fd;
+  --color-rizo-hover: #ca73fd;
+  --color-rizo-dark: #9103e4;
+  --color-rizo-soft: #f6e9ff;
+  --color-ink: #4b5563;
+  --color-ink-strong: #111111;
+  --color-heading: #000000;
+  --color-muted: #6b7280;
+  --color-nav: #4b5563;
+  --color-line: #f3f4f6;
+  --color-line-strong: #e5e7eb;
+  --color-soft: #ffffff;
+  --color-ghost: #f3f4f6;
+  --color-danger: #ef4444;
+  --color-danger-soft: #fef2f2;
+  --color-success: #22c55e;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: #000000;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
