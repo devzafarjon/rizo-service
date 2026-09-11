@@ -36,6 +36,10 @@ export function canTransition(from: JobStatus, to: JobStatus) {
   return STATUS_FLOW[from].includes(to);
 }
 
+export function isClosedStatus(status: JobStatus) {
+  return status === "cancelled" || status === "invoiced";
+}
+
 export function serializeJob(job: JobWithRelations) {
   return {
     ...job,
@@ -56,7 +60,7 @@ export function emitJobUpdated(io: Server | undefined, job: ReturnType<typeof se
   io?.emit("job:updated", job);
 }
 
-export async function applyJobStatus(jobId: string, nextStatus: JobStatus, actorRole: "admin" | "dispatcher" | "technician") {
+export async function applyJobStatus(jobId: string, nextStatus: JobStatus, actorRole: "dispatcher" | "technician") {
   const job = await prisma.job.findUnique({ where: { id: jobId } });
   if (!job) {
     return { error: "Job not found" as const, status: 404 };

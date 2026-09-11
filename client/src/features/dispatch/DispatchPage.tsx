@@ -5,9 +5,11 @@ import { api } from "../../lib/api";
 import type { Job, User } from "../../lib/types";
 import { jobWhen, priorityDot, todayIso } from "../../lib/format";
 import { useI18n } from "../../i18n/LanguageContext";
+import type { MessageKey } from "../../i18n/messages";
 import { useToast } from "../../components/Toast";
 import { PageTitle, PrimaryButton, SelectField, TextField } from "../../components/ui";
 import { Spinner } from "../../components/Spinner";
+import { LoadError } from "../../components/EmptyState";
 
 type Board = { date: string; technicians: User[]; jobs: Job[] };
 
@@ -17,7 +19,7 @@ export function DispatchPage() {
   const queryClient = useQueryClient();
   const [date, setDate] = useState(todayIso());
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["dispatch", date],
     queryFn: () => api<Board>(`/dispatch?date=${date}`),
     refetchInterval: 4000,
@@ -65,7 +67,7 @@ export function DispatchPage() {
         subtitle={t("dispatch.subtitle")}
         actions={
           <>
-            <TextField type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-auto" />
+            <TextField type="date" value={date} onChange={(e) => setDate(e.target.value)} className="!w-auto" />
             <PrimaryButton onClick={() => autoPlan.mutate()} disabled={autoPlan.isPending}>
               {t("dispatch.autoPlan")}
             </PrimaryButton>
@@ -76,10 +78,12 @@ export function DispatchPage() {
         }
       />
 
-      {isLoading || !data ? (
+      {isLoading ? (
         <div className="flex justify-center py-16">
           <Spinner />
         </div>
+      ) : isError || !data ? (
+        <LoadError />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[220px_repeat(auto-fit,minmax(220px,1fr))]">
           <BoardColumn
@@ -140,6 +144,7 @@ function BoardColumn({
   onDragOver: (event: DragEvent) => void;
   onDrop: (event: DragEvent) => void;
 }) {
+  const { t } = useI18n();
   return (
     <section
       className="min-h-72 rounded-3xl bg-white p-4 shadow-[0_0_10px_rgba(0,0,0,0.1)]"
@@ -163,6 +168,7 @@ function BoardColumn({
               {job.title}
             </Link>
             <p className="text-sm text-gray-600">{job.customer.name}</p>
+            <p className="text-xs font-medium text-[#9103E4]">{t(`kind.${job.kind}` as MessageKey)}</p>
             <p className="text-xs text-gray-500">{jobWhen(job)}</p>
             <label className="mt-2 block" onPointerDown={(event) => event.stopPropagation()}>
               <span className="sr-only">{assignLabel}</span>

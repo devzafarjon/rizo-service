@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "../lib/api";
 import type { Job } from "../lib/types";
-import { mapsUrl, money } from "../lib/format";
+import type { MessageKey } from "../i18n/messages";
+import { mapsUrl, money, statusDot, isClosedJob } from "../lib/format";
 import { useI18n } from "../i18n/LanguageContext";
 import { Card, GhostButton, Label, PrimaryButton, TextArea, TextField } from "./ui";
-import { PriorityBadge, StatusBadge } from "./JobCard";
+import { KindBadge, PriorityBadge, StatusBadge } from "./JobCard";
 import { useToast } from "./Toast";
 import { useAuth } from "../features/auth/AuthContext";
 
@@ -80,6 +81,13 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
     onError: () => notify(t("jobs.failed"), "error"),
   });
 
+  const checklistMut = useMutation({
+    mutationFn: (item: { id: string; done: boolean }) =>
+      api<{ job: Job }>(`/jobs/${job.id}/checklist`, { method: "POST", body: JSON.stringify(item) }),
+    onSuccess: (result) => rememberJob(result),
+    onError: () => notify(t("jobs.failed"), "error"),
+  });
+
   const invoiceMut = useMutation({
     mutationFn: () => api<{ invoice: { id: string } }>("/invoices", { method: "POST", body: JSON.stringify({ jobId: job.id }) }),
     onSuccess: (result) => {
@@ -107,14 +115,24 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
   const canStart = job.status === "new" || job.status === "scheduled";
   const canComplete = job.status === "in_progress";
   const canInvoice = !technician && job.status === "completed" && job.invoices.length === 0;
+  const closed = isClosedJob(job.status);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-      <Card dot="bg-blue-400">
-        <StatusBadge status={job.status} />
+      <Card dot={statusDot(job.status)}>
+        <div className="flex flex-wrap gap-3">
+          <KindBadge kind={job.kind} />
+          <StatusBadge status={job.status} />
+        </div>
         <h2 className="mt-3 text-2xl font-semibold text-black">{job.title}</h2>
         <p className="mt-2 text-gray-600">{job.description || "—"}</p>
         <div className="mt-6 grid gap-3 text-sm">
+          {job.kind === "installation" && job.orderRef ? (
+            <p>
+              <span className="font-bold text-black">{t("jobs.orderRef")}: </span>
+              {job.orderRef}
+            </p>
+          ) : null}
           <p>
             <span className="font-bold text-black">{t("jobs.customer")}: </span>
             {job.customer.name} {job.customer.phone ? `· ${job.customer.phone}` : ""}
@@ -159,7 +177,30 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
 
       <div className="grid gap-6">
         <Card>
+          <h3 className="text-xl font-semibold text-black">{t("jobs.checklist")}</h3>
+          <ul className="mt-4 space-y-2">
+            {job.checklist?.map((item) => (
+              <li key={item.id}>
+                <label className={`flex min-h-11 items-center gap-3 rounded-xl bg-gray-50 px-3 py-2 text-sm ${closed ? "" : "cursor-pointer"}`}>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[#B439FD]"
+                    checked={item.done}
+                    disabled={closed}
+                    onChange={(event) => checklistMut.mutate({ id: item.id, done: event.target.checked })}
+                  />
+                  <span className={item.done ? "text-gray-500 line-through" : "text-black"}>
+                    {t(`checklist.${item.id}` as MessageKey)}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card>
           <h3 className="text-xl font-semibold text-black">{t("jobs.addNote")}</h3>
+          {closed ? null : (
           <form
             className="mt-4"
             onSubmit={(event: FormEvent) => {
@@ -174,6 +215,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
               {t("common.add")}
             </PrimaryButton>
           </form>
+          )}
           <ul className="mt-4 space-y-3">
             {job.notes.map((item) => (
               <li key={item.id} className="rounded-xl bg-gray-50 p-3 text-sm">
@@ -186,6 +228,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
 
         <Card>
           <h3 className="text-xl font-semibold text-black">{t("jobs.parts")}</h3>
+          {closed ? null : (
           <form
             className="mt-4 grid gap-2 sm:grid-cols-3"
             onSubmit={(event: FormEvent) => {
@@ -211,6 +254,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
               </PrimaryButton>
             </div>
           </form>
+          )}
           <ul className="mt-4 space-y-2 text-sm">
             {job.partsUsed.map((part) => (
               <li key={part.id} className="flex justify-between gap-3">
@@ -228,6 +272,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
 
         <Card>
           <h3 className="text-xl font-semibold text-black">{t("jobs.photos")}</h3>
+          {closed ? null : (
           <label className={`${ghostBtn()} mt-4 cursor-pointer`}>
             {t("jobs.addPhoto")}
             <input
@@ -240,6 +285,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
               }}
             />
           </label>
+          )}
           <div className="mt-4 grid grid-cols-2 gap-3">
             {job.photos.map((photo) => (
               <img key={photo.id} src={photo.photoUrl} alt="" className="h-28 w-full rounded-2xl object-cover" />

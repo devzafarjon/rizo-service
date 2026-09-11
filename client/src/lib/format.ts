@@ -1,4 +1,4 @@
-import type { JobStatus, Priority } from "./types";
+import type { JobKind, JobStatus, Priority } from "./types";
 
 export function money(amount: number, locale = "uz") {
   return new Intl.NumberFormat(locale === "ru" ? "ru-RU" : locale === "en" ? "en-US" : "uz-UZ", {
@@ -61,10 +61,33 @@ export function priorityDot(priority: Priority) {
   }
 }
 
-export function todayIso() {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+export function kindDot(kind: JobKind) {
+  switch (kind) {
+    case "installation":
+      return "bg-[#B439FD]";
+    case "maintenance":
+      return "bg-cyan-400";
+    default:
+      return "bg-orange-400";
+  }
+}
+
+export function todayIso(timeZone = "Asia/Tashkent") {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+export function isClosedJob(status: JobStatus) {
+  return status === "cancelled" || status === "invoiced";
+}
+
+export function isMaintenanceDue(nextMaintenanceOn: string | null | undefined) {
+  if (!nextMaintenanceOn) {
+    return false;
+  }
+  return nextMaintenanceOn.slice(0, 10) <= todayIso();
 }

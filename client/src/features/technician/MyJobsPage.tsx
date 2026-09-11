@@ -4,7 +4,7 @@ import { api } from "../../lib/api";
 import type { Job } from "../../lib/types";
 import { todayIso } from "../../lib/format";
 import { useI18n } from "../../i18n/LanguageContext";
-import { EmptyState } from "../../components/EmptyState";
+import { EmptyState, LoadError } from "../../components/EmptyState";
 import { Spinner } from "../../components/Spinner";
 import { PageTitle } from "../../components/ui";
 import { JobCard } from "../../components/JobCard";
@@ -13,7 +13,7 @@ import { JobWorkspace } from "../../components/JobWorkspace";
 export function MyJobsPage() {
   const { t } = useI18n();
   const today = todayIso();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["jobs", "mine"],
     queryFn: () => api<{ jobs: Job[] }>("/jobs?mine=1"),
     refetchInterval: 4000,
@@ -22,10 +22,15 @@ export function MyJobsPage() {
   const jobs = data?.jobs.filter((job) => job.status !== "cancelled") ?? [];
   const open = ["new", "scheduled", "in_progress"];
   const todayJobs = jobs.filter(
-    (job) => open.includes(job.status) && (!job.scheduledDate || job.scheduledDate.slice(0, 10) <= today),
+    (job) =>
+      job.status === "in_progress" ||
+      (open.includes(job.status) && (!job.scheduledDate || job.scheduledDate.slice(0, 10) <= today)),
   );
   const later = jobs.filter(
-    (job) => open.includes(job.status) && Boolean(job.scheduledDate && job.scheduledDate.slice(0, 10) > today),
+    (job) =>
+      job.status !== "in_progress" &&
+      open.includes(job.status) &&
+      Boolean(job.scheduledDate && job.scheduledDate.slice(0, 10) > today),
   );
   const done = jobs.filter((job) => job.status === "completed" || job.status === "invoiced");
 
@@ -36,10 +41,15 @@ export function MyJobsPage() {
         <div className="flex justify-center py-16">
           <Spinner />
         </div>
+      ) : isError ? (
+        <LoadError />
       ) : jobs.length === 0 ? (
         <EmptyState title={t("myJobs.emptyTitle")} description={t("myJobs.emptyDescription")} />
       ) : (
         <div className="grid max-w-xl gap-4">
+          {todayJobs.length > 0 && (later.length > 0 || done.length > 0) ? (
+            <h2 className="text-xl font-semibold text-black">{t("common.today")}</h2>
+          ) : null}
           {todayJobs.map((job) => (
             <JobCard key={job.id} job={job} to={`/my-jobs/${job.id}`} />
           ))}
@@ -60,18 +70,22 @@ export function MyJobsPage() {
 export function TechnicianJobPage() {
   const { id } = useParams();
   const { t } = useI18n();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["jobs", id],
     queryFn: () => api<{ job: Job }>(`/jobs/${id}`),
     refetchInterval: 4000,
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="flex justify-center py-16">
         <Spinner />
       </div>
     );
+  }
+
+  if (isError || !data) {
+    return <LoadError />;
   }
 
   return (

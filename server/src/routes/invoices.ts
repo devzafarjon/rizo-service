@@ -7,7 +7,7 @@ import { emitJobUpdated, jobInclude, serializeJob } from "../lib/jobs.ts";
 import { asNumber, invoiceAmount } from "../lib/money.ts";
 
 export const invoicesRouter = Router();
-invoicesRouter.use(requireAuth, requireRole("admin", "dispatcher"));
+invoicesRouter.use(requireAuth, requireRole("dispatcher"));
 
 invoicesRouter.get("/", async (req, res) => {
   const status = String(req.query.status ?? "");

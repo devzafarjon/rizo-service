@@ -7,7 +7,7 @@ import { calendarDate, emitJobUpdated, jobInclude, serializeJob, startOfDay } fr
 import { toPublicUser } from "../lib/users.ts";
 
 export const dispatchRouter = Router();
-dispatchRouter.use(requireAuth, requireRole("admin", "dispatcher"));
+dispatchRouter.use(requireAuth, requireRole("dispatcher"));
 
 dispatchRouter.get("/technicians", async (_req, res) => {
   const technicians = await prisma.user.findMany({

@@ -73,7 +73,7 @@ function GlobeIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="h-4 w-4 text-purple-600"
+      className="h-4 w-4 text-[#B439FD]"
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />

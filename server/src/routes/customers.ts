@@ -5,14 +5,14 @@ import { requireAuth, requireRole } from "../middleware/auth.ts";
 import { startOfDay } from "../lib/jobs.ts";
 
 export const customersRouter = Router();
-customersRouter.use(requireAuth, requireRole("admin", "dispatcher"));
+customersRouter.use(requireAuth, requireRole("dispatcher"));
 
 const customerSchema = z.object({
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
   email: z.string().trim().max(120).optional().or(z.literal("")),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
-  maintenanceIntervalMonths: z.number().int().min(1).max(24).optional(),
+  maintenanceIntervalMonths: z.coerce.number().int().min(1).max(24).optional(),
   nextMaintenanceOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
 });
 

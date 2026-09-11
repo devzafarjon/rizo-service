@@ -10,7 +10,6 @@ import { useI18n } from "../../i18n/LanguageContext";
 import type { MessageKey } from "../../i18n/messages";
 
 const DEMO_ACCOUNTS: Array<{ role: Role; email: string }> = [
-  { role: "admin", email: "admin@rizo.local" },
   { role: "dispatcher", email: "dispatcher@rizo.local" },
   { role: "technician", email: "tech@rizo.local" },
 ];
@@ -19,13 +18,7 @@ const fieldClass =
   "h-12 w-full rounded-lg border border-gray-200 bg-white py-2 pr-4 pl-10 text-base font-medium text-black outline-none placeholder:text-gray-400 focus:border-[#B439FD] sm:h-11 sm:text-sm";
 
 function roleMessageKey(role: Role): MessageKey {
-  if (role === "admin") {
-    return "roles.admin";
-  }
-  if (role === "dispatcher") {
-    return "roles.dispatcher";
-  }
-  return "roles.technician";
+  return role === "dispatcher" ? "roles.dispatcher" : "roles.technician";
 }
 
 export function LoginPage() {
@@ -33,7 +26,7 @@ export function LoginPage() {
   const { t } = useI18n();
   const { notify } = useToast();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("admin@rizo.local");
+  const [email, setEmail] = useState("dispatcher@rizo.local");
   const [password, setPassword] = useState("password123");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");

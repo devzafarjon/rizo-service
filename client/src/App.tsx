@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 });
 
 function Office({ children }: { children: ReactNode }) {
-  return <RoleRoute roles={["admin", "dispatcher"]}>{children}</RoleRoute>;
+  return <RoleRoute roles={["dispatcher"]}>{children}</RoleRoute>;
 }
 
 export default function App() {

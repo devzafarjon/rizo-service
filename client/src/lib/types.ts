@@ -1,7 +1,10 @@
-export type Role = "admin" | "dispatcher" | "technician";
+export type Role = "dispatcher" | "technician";
 export type JobStatus = "new" | "scheduled" | "in_progress" | "completed" | "cancelled" | "invoiced";
+export type JobKind = "installation" | "maintenance" | "repair";
 export type Priority = "low" | "medium" | "high" | "urgent";
 export type InvoiceStatus = "draft" | "sent" | "paid";
+
+export type ChecklistItem = { id: string; done: boolean };
 
 export type User = {
   id: string;
@@ -17,6 +20,8 @@ export type Customer = {
   phone: string | null;
   email: string | null;
   notes: string | null;
+  maintenanceIntervalMonths: number;
+  nextMaintenanceOn: string | null;
   createdAt: string;
   locations?: ServiceLocation[];
   _count?: { jobs: number };
@@ -69,6 +74,9 @@ export type Job = {
   id: string;
   title: string;
   description: string | null;
+  kind: JobKind;
+  orderRef: string | null;
+  checklist: ChecklistItem[];
   status: JobStatus;
   priority: Priority;
   customerId: string;
@@ -100,6 +108,16 @@ export type DashboardData = {
     todayJobs: number;
     completedToday: number;
     dueAmount: number;
+    installationsOpen: number;
+    maintenanceOpen: number;
+    maintenanceDue: number;
   };
+  maintenanceDueShops: Array<{
+    id: string;
+    name: string;
+    phone: string | null;
+    nextMaintenanceOn: string | null;
+    maintenanceIntervalMonths: number;
+  }>;
   recentJobs: Job[];
 };

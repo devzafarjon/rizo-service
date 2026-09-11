@@ -7,7 +7,7 @@ import { money } from "../../lib/format";
 import { useI18n } from "../../i18n/LanguageContext";
 import type { MessageKey } from "../../i18n/messages";
 import { useToast } from "../../components/Toast";
-import { EmptyState } from "../../components/EmptyState";
+import { EmptyState, LoadError } from "../../components/EmptyState";
 import { Spinner } from "../../components/Spinner";
 import { Card, GhostButton, PageTitle, PrimaryButton } from "../../components/ui";
 
@@ -15,7 +15,7 @@ type InvoiceRow = Invoice & { job: Job };
 
 export function InvoicesPage() {
   const { t, locale } = useI18n();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["invoices"],
     queryFn: () => api<{ invoices: InvoiceRow[] }>("/invoices"),
   });
@@ -27,6 +27,8 @@ export function InvoicesPage() {
         <div className="flex justify-center py-16">
           <Spinner />
         </div>
+      ) : isError ? (
+        <LoadError />
       ) : !data?.invoices.length ? (
         <EmptyState title={t("invoices.emptyTitle")} description={t("invoices.emptyDescription")} />
       ) : (
@@ -58,7 +60,7 @@ export function InvoiceDetailPage() {
   const { t, locale } = useI18n();
   const { notify } = useToast();
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ["invoices", id],
     queryFn: () => api<{ invoice: InvoiceRow }>(`/invoices/${id}`),
   });
@@ -71,12 +73,16 @@ export function InvoiceDetailPage() {
     },
   });
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <div className="flex justify-center py-16">
         <Spinner />
       </div>
     );
+  }
+
+  if (isError || !data) {
+    return <LoadError />;
   }
 
   const invoice = data.invoice;

@@ -8,11 +8,11 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", labelKey: "nav.dashboard", roles: ["admin", "dispatcher"] },
-  { to: "/customers", labelKey: "nav.customers", roles: ["admin", "dispatcher"] },
-  { to: "/jobs", labelKey: "nav.jobs", roles: ["admin", "dispatcher"] },
-  { to: "/dispatch", labelKey: "nav.dispatch", roles: ["admin", "dispatcher"] },
-  { to: "/invoices", labelKey: "nav.invoices", roles: ["admin", "dispatcher"] },
+  { to: "/dashboard", labelKey: "nav.dashboard", roles: ["dispatcher"] },
+  { to: "/customers", labelKey: "nav.customers", roles: ["dispatcher"] },
+  { to: "/jobs", labelKey: "nav.jobs", roles: ["dispatcher"] },
+  { to: "/dispatch", labelKey: "nav.dispatch", roles: ["dispatcher"] },
+  { to: "/invoices", labelKey: "nav.invoices", roles: ["dispatcher"] },
   { to: "/my-jobs", labelKey: "nav.myJobs", roles: ["technician"] },
 ];
 

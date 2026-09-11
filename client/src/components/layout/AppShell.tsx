@@ -9,13 +9,7 @@ import { RizoLogo } from "../RizoLogo";
 import { navForRole } from "./nav";
 
 function roleKey(role: Role): MessageKey {
-  if (role === "admin") {
-    return "roles.admin";
-  }
-  if (role === "dispatcher") {
-    return "roles.dispatcher";
-  }
-  return "roles.technician";
+  return role === "dispatcher" ? "roles.dispatcher" : "roles.technician";
 }
 
 function desktopNavClass(isActive: boolean) {

@@ -5,7 +5,7 @@ import { calendarDate, jobInclude, serializeJob, startOfDay } from "../lib/jobs.
 import { asNumber } from "../lib/money.ts";
 
 export const dashboardRouter = Router();
-dashboardRouter.use(requireAuth, requireRole("admin", "dispatcher"));
+dashboardRouter.use(requireAuth, requireRole("dispatcher"));
 
 dashboardRouter.get("/", async (_req, res) => {
   const today = startOfDay(calendarDate());

@@ -4,7 +4,7 @@ import type { JobKind, JobStatus, Priority } from "@prisma/client";
 import type { Server } from "socket.io";
 import { prisma } from "../lib/prisma.ts";
 import { requireAuth, requireRole } from "../middleware/auth.ts";
-import { applyJobStatus, emitJobUpdated, jobInclude, serializeJob, startOfDay } from "../lib/jobs.ts";
+import { applyJobStatus, emitJobUpdated, isClosedStatus, jobInclude, serializeJob, startOfDay } from "../lib/jobs.ts";
 import { defaultChecklist, parseChecklist } from "../lib/checklists.ts";
 
 export const jobsRouter = Router();
@@ -30,6 +30,26 @@ const jobSchema = z.object({
 
 function getIo(req: { app: { get: (key: string) => unknown } }) {
   return req.app.get("io") as Server | undefined;
+}
+
+function writableJob<T extends { assignedTechnicianId: string | null; status: JobStatus }>(
+  job: T | null,
+  req: { user?: { role: string; userId: string } },
+  res: { status: (code: number) => { json: (body: { error: string }) => void } },
+): job is T {
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return false;
+  }
+  if (req.user!.role === "technician" && job.assignedTechnicianId !== req.user!.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return false;
+  }
+  if (isClosedStatus(job.status)) {
+    res.status(400).json({ error: "Job is closed" });
+    return false;
+  }
+  return true;
 }
 
 jobsRouter.get("/", async (req, res) => {
@@ -94,7 +114,7 @@ jobsRouter.get("/:id", async (req, res) => {
   res.json({ job: serializeJob(job) });
 });
 
-jobsRouter.post("/", requireRole("admin", "dispatcher"), async (req, res) => {
+jobsRouter.post("/", requireRole("dispatcher"), async (req, res) => {
   const parsed = jobSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid job" });
@@ -138,7 +158,7 @@ jobsRouter.post("/", requireRole("admin", "dispatcher"), async (req, res) => {
   res.status(201).json({ job: serialized });
 });
 
-jobsRouter.patch("/:id", requireRole("admin", "dispatcher"), async (req, res) => {
+jobsRouter.patch("/:id", requireRole("dispatcher"), async (req, res) => {
   const parsed = jobSchema.partial().safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid job" });
@@ -148,6 +168,10 @@ jobsRouter.patch("/:id", requireRole("admin", "dispatcher"), async (req, res) =>
   const existing = await prisma.job.findUnique({ where: { id: String(req.params.id) } });
   if (!existing) {
     res.status(404).json({ error: "Job not found" });
+    return;
+  }
+  if (isClosedStatus(existing.status)) {
+    res.status(400).json({ error: "Job is closed" });
     return;
   }
 
@@ -174,9 +198,20 @@ jobsRouter.patch("/:id", requireRole("admin", "dispatcher"), async (req, res) =>
   if (status === "new" && assigned && date) {
     status = "scheduled";
   }
-  if (status === "scheduled" && !assigned) {
+  if ((status === "scheduled" || status === "in_progress") && !assigned) {
     status = "new";
   }
+  if (status === "scheduled" && !date) {
+    status = "new";
+  }
+
+  const nextKind = parsed.data.kind ?? existing.kind;
+  const nextOrderRef =
+    nextKind === "installation"
+      ? parsed.data.orderRef !== undefined
+        ? parsed.data.orderRef || null
+        : existing.orderRef
+      : null;
 
   const job = await prisma.job.update({
     where: { id: String(req.params.id) },
@@ -189,7 +224,7 @@ jobsRouter.patch("/:id", requireRole("admin", "dispatcher"), async (req, res) =>
           ? { kind: parsed.data.kind, checklist: defaultChecklist(parsed.data.kind) }
           : { kind: parsed.data.kind }
         : {}),
-      ...(parsed.data.orderRef !== undefined ? { orderRef: parsed.data.orderRef || null } : {}),
+      orderRef: nextOrderRef,
       ...(parsed.data.customerId !== undefined ? { customerId: parsed.data.customerId } : {}),
       ...(parsed.data.locationId !== undefined ? { locationId: parsed.data.locationId } : {}),
       assignedTechnicianId: assigned,
@@ -197,6 +232,7 @@ jobsRouter.patch("/:id", requireRole("admin", "dispatcher"), async (req, res) =>
       ...(parsed.data.scheduledTimeStart !== undefined ? { scheduledTimeStart: parsed.data.scheduledTimeStart || null } : {}),
       ...(parsed.data.scheduledTimeEnd !== undefined ? { scheduledTimeEnd: parsed.data.scheduledTimeEnd || null } : {}),
       status,
+      ...(status === "new" && existing.status === "in_progress" ? { startedAt: null } : {}),
     },
     include: jobInclude,
   });
@@ -223,7 +259,11 @@ jobsRouter.post("/:id/status", async (req, res) => {
     return;
   }
 
-  const result = await applyJobStatus(String(req.params.id), nextStatus, req.user!.role);
+  const result = await applyJobStatus(
+    String(req.params.id),
+    nextStatus,
+    req.user!.role === "technician" ? "technician" : "dispatcher",
+  );
   if ("error" in result && result.error) {
     res.status(result.status).json({ error: result.error });
     return;
@@ -239,12 +279,7 @@ jobsRouter.post("/:id/notes", async (req, res) => {
     return;
   }
   const job = await prisma.job.findUnique({ where: { id: String(req.params.id) } });
-  if (!job) {
-    res.status(404).json({ error: "Job not found" });
-    return;
-  }
-  if (req.user!.role === "technician" && job.assignedTechnicianId !== req.user!.userId) {
-    res.status(403).json({ error: "Forbidden" });
+  if (!writableJob(job, req, res)) {
     return;
   }
 
@@ -265,12 +300,7 @@ jobsRouter.post("/:id/checklist", async (req, res) => {
     return;
   }
   const job = await prisma.job.findUnique({ where: { id: String(req.params.id) } });
-  if (!job) {
-    res.status(404).json({ error: "Job not found" });
-    return;
-  }
-  if (req.user!.role === "technician" && job.assignedTechnicianId !== req.user!.userId) {
-    res.status(403).json({ error: "Forbidden" });
+  if (!writableJob(job, req, res)) {
     return;
   }
 
@@ -294,12 +324,7 @@ jobsRouter.post("/:id/photos", async (req, res) => {
     return;
   }
   const job = await prisma.job.findUnique({ where: { id: String(req.params.id) } });
-  if (!job) {
-    res.status(404).json({ error: "Job not found" });
-    return;
-  }
-  if (req.user!.role === "technician" && job.assignedTechnicianId !== req.user!.userId) {
-    res.status(403).json({ error: "Forbidden" });
+  if (!writableJob(job, req, res)) {
     return;
   }
 
@@ -321,12 +346,7 @@ jobsRouter.post("/:id/parts", async (req, res) => {
     return;
   }
   const job = await prisma.job.findUnique({ where: { id: String(req.params.id) } });
-  if (!job) {
-    res.status(404).json({ error: "Job not found" });
-    return;
-  }
-  if (req.user!.role === "technician" && job.assignedTechnicianId !== req.user!.userId) {
-    res.status(403).json({ error: "Forbidden" });
+  if (!writableJob(job, req, res)) {
     return;
   }
 

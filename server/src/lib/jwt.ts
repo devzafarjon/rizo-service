@@ -14,5 +14,9 @@ export function signToken(payload: AuthUser) {
 }
 
 export function verifyToken(token: string): AuthUser {
-  return jwt.verify(token, getSecret()) as AuthUser;
+  const payload = jwt.verify(token, getSecret()) as Omit<AuthUser, "role"> & { role: string };
+  return {
+    ...payload,
+    role: payload.role === "technician" ? "technician" : "dispatcher",
+  };
 }

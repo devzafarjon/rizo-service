@@ -4,30 +4,36 @@ Internal field service app for Rizo: dispatch technicians to shops, track visits
 
 The UI follows [rizo.uz](https://rizo.uz) (Inter, purple `#B439FD`, floating header). Language can be switched between **UZ**, **EN**, and **RU**.
 
+Field work covers three service types:
+
+- **New order install** — after a shop orders Rizo (kassa, printer, scanner, loyalty), a technician installs the delivered order
+- **Technical maintenance** — planned visits on a per-shop interval (default every 3 months)
+- **Repair** — break/fix work when something fails
+
 ## Stack
 
 | Layer | Tech |
 | --- | --- |
 | App | React 19, Vite, TypeScript, Tailwind CSS 4, React Router, TanStack Query |
-| API | Node.js, Express, Prisma, JWT (admin / dispatcher / technician) |
+| API | Node.js, Express, Prisma, JWT (dispatcher / technician) |
 | Database | PostgreSQL |
 
 Monorepo: `client/` + `server/`.
 
 ## Features
 
-**Admin and dispatcher**
+**Dispatcher**
 
-- Dashboard: open jobs, today’s jobs, overdue, unassigned, urgent, amount to collect
-- Customers and service locations
-- Jobs: create, assign, start/complete, notes, photos, parts
+- Dashboard: open jobs, today’s jobs, overdue, unassigned, urgent, amount to collect, plus open installs / maintenance / shops due
+- Customers and service locations, with a maintenance interval and next visit date
+- Jobs: **install new order**, **technical maintenance**, or **repair** — assign, checklist, notes, photos, parts
 - Dispatch board: drag a job onto a technician, or use **Auto plan** (phones can assign from the dropdown)
 - Invoices from completed jobs (labor + parts), mark sent or paid, print
 
 **Technician (phone browser)**
 
 - My jobs for today, upcoming, and done
-- Start / complete, maps, call customer, notes, photos, parts used
+- Start / complete, maps, call customer, on-site checklist, notes, photos, parts used
 
 Labor is billed at **150,000 so‘m per hour**. Hours come from time on site (capped at 8h), otherwise the scheduled slot, otherwise 1 hour.
 
@@ -84,7 +90,6 @@ Password for every account: `password123`
 
 | Role | Email |
 | --- | --- |
-| Admin | `admin@rizo.local` |
 | Dispatcher | `dispatcher@rizo.local` |
 | Technician | `tech@rizo.local` |
 | Technician | `tech2@rizo.local` |
