@@ -1,20 +1,24 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { JobStatus, Priority } from "@prisma/client";
+import type { JobKind, JobStatus, Priority } from "@prisma/client";
 import type { Server } from "socket.io";
 import { prisma } from "../lib/prisma.ts";
 import { requireAuth, requireRole } from "../middleware/auth.ts";
 import { applyJobStatus, emitJobUpdated, jobInclude, serializeJob, startOfDay } from "../lib/jobs.ts";
+import { defaultChecklist, parseChecklist } from "../lib/checklists.ts";
 
 export const jobsRouter = Router();
 jobsRouter.use(requireAuth);
 
 const STATUSES = ["new", "scheduled", "in_progress", "completed", "cancelled", "invoiced"] as const;
 const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
+const KINDS = ["installation", "maintenance", "repair"] as const;
 
 const jobSchema = z.object({
   title: z.string().trim().min(1).max(160),
   description: z.string().trim().max(4000).optional().or(z.literal("")),
+  kind: z.enum(KINDS).optional(),
+  orderRef: z.string().trim().max(80).optional().or(z.literal("")).nullable(),
   priority: z.enum(PRIORITIES).optional(),
   customerId: z.string().min(1),
   locationId: z.string().min(1),
@@ -32,6 +36,7 @@ jobsRouter.get("/", async (req, res) => {
   const q = String(req.query.q ?? "").trim();
   const status = STATUSES.includes(String(req.query.status) as JobStatus) ? (req.query.status as JobStatus) : undefined;
   const technicianId = String(req.query.technicianId ?? "");
+  const kind = KINDS.includes(String(req.query.kind) as JobKind) ? (req.query.kind as JobKind) : undefined;
   const from = String(req.query.from ?? "");
   const to = String(req.query.to ?? "");
   const mine = req.query.mine === "1";
@@ -46,6 +51,7 @@ jobsRouter.get("/", async (req, res) => {
       ...(mine || req.user!.role === "technician" ? { assignedTechnicianId: req.user!.userId } : {}),
       ...(status ? { status } : {}),
       ...(technicianId ? { assignedTechnicianId: technicianId } : {}),
+      ...(kind ? { kind } : {}),
       ...(from || to
         ? {
             scheduledDate: {
@@ -60,6 +66,7 @@ jobsRouter.get("/", async (req, res) => {
               { title: { contains: q, mode: "insensitive" } },
               { customer: { name: { contains: q, mode: "insensitive" } } },
               { location: { address: { contains: q, mode: "insensitive" } } },
+              { orderRef: { contains: q, mode: "insensitive" } },
             ],
           }
         : {}),
@@ -105,11 +112,15 @@ jobsRouter.post("/", requireRole("admin", "dispatcher"), async (req, res) => {
   const assigned = parsed.data.assignedTechnicianId || null;
   const date = parsed.data.scheduledDate ? startOfDay(parsed.data.scheduledDate) : null;
   const status: JobStatus = assigned && date ? "scheduled" : "new";
+  const kind = (parsed.data.kind as JobKind | undefined) ?? "repair";
 
   const job = await prisma.job.create({
     data: {
       title: parsed.data.title,
       description: parsed.data.description || null,
+      kind,
+      orderRef: kind === "installation" ? parsed.data.orderRef || null : null,
+      checklist: defaultChecklist(kind),
       priority: (parsed.data.priority as Priority | undefined) ?? "medium",
       customerId: parsed.data.customerId,
       locationId: parsed.data.locationId,
@@ -173,6 +184,12 @@ jobsRouter.patch("/:id", requireRole("admin", "dispatcher"), async (req, res) =>
       ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
       ...(parsed.data.description !== undefined ? { description: parsed.data.description || null } : {}),
       ...(parsed.data.priority !== undefined ? { priority: parsed.data.priority } : {}),
+      ...(parsed.data.kind !== undefined
+        ? parsed.data.kind !== existing.kind
+          ? { kind: parsed.data.kind, checklist: defaultChecklist(parsed.data.kind) }
+          : { kind: parsed.data.kind }
+        : {}),
+      ...(parsed.data.orderRef !== undefined ? { orderRef: parsed.data.orderRef || null } : {}),
       ...(parsed.data.customerId !== undefined ? { customerId: parsed.data.customerId } : {}),
       ...(parsed.data.locationId !== undefined ? { locationId: parsed.data.locationId } : {}),
       assignedTechnicianId: assigned,
@@ -238,6 +255,36 @@ jobsRouter.post("/:id/notes", async (req, res) => {
   const serialized = serializeJob(updated);
   emitJobUpdated(getIo(req), serialized);
   res.status(201).json({ job: serialized });
+});
+
+jobsRouter.post("/:id/checklist", async (req, res) => {
+  const itemId = String(req.body?.id ?? "").trim();
+  const done = Boolean(req.body?.done);
+  if (!itemId) {
+    res.status(400).json({ error: "Checklist item is required" });
+    return;
+  }
+  const job = await prisma.job.findUnique({ where: { id: String(req.params.id) } });
+  if (!job) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
+  if (req.user!.role === "technician" && job.assignedTechnicianId !== req.user!.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const checklist = parseChecklist(job.checklist, job.kind).map((item) =>
+    item.id === itemId ? { ...item, done } : item,
+  );
+  const updated = await prisma.job.update({
+    where: { id: job.id },
+    data: { checklist },
+    include: jobInclude,
+  });
+  const serialized = serializeJob(updated);
+  emitJobUpdated(getIo(req), serialized);
+  res.json({ job: serialized });
 });
 
 jobsRouter.post("/:id/photos", async (req, res) => {

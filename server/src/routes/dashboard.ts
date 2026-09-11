@@ -10,8 +10,20 @@ dashboardRouter.use(requireAuth, requireRole("admin", "dispatcher"));
 dashboardRouter.get("/", async (_req, res) => {
   const today = startOfDay(calendarDate());
 
-  const [openJobs, overdue, unassigned, urgent, invoicesDue, todayJobs, completedToday, recentJobs] =
-    await Promise.all([
+  const [
+    openJobs,
+    overdue,
+    unassigned,
+    urgent,
+    invoicesDue,
+    todayJobs,
+    completedToday,
+    recentJobs,
+    installationsOpen,
+    maintenanceOpen,
+    maintenanceDueCount,
+    maintenanceDueShops,
+  ] = await Promise.all([
       prisma.job.count({ where: { status: { in: ["new", "scheduled", "in_progress"] } } }),
       prisma.job.count({
         where: {
@@ -37,6 +49,27 @@ dashboardRouter.get("/", async (_req, res) => {
         orderBy: { createdAt: "desc" },
         take: 6,
       }),
+      prisma.job.count({
+        where: { kind: "installation", status: { in: ["new", "scheduled", "in_progress"] } },
+      }),
+      prisma.job.count({
+        where: { kind: "maintenance", status: { in: ["new", "scheduled", "in_progress"] } },
+      }),
+      prisma.customer.count({
+        where: { nextMaintenanceOn: { lte: today } },
+      }),
+      prisma.customer.findMany({
+        where: { nextMaintenanceOn: { lte: today } },
+        orderBy: { nextMaintenanceOn: "asc" },
+        take: 8,
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          nextMaintenanceOn: true,
+          maintenanceIntervalMonths: true,
+        },
+      }),
     ]);
 
   const dueInvoices = await prisma.invoice.findMany({
@@ -55,7 +88,11 @@ dashboardRouter.get("/", async (_req, res) => {
       todayJobs,
       completedToday,
       dueAmount,
+      installationsOpen,
+      maintenanceOpen,
+      maintenanceDue: maintenanceDueCount,
     },
+    maintenanceDueShops,
     recentJobs: recentJobs.map(serializeJob),
   });
 });

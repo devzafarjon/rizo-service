@@ -2,6 +2,7 @@ import type { JobStatus, Prisma } from "@prisma/client";
 import type { Server } from "socket.io";
 import { prisma } from "./prisma.ts";
 import { asNumber, laborHoursFor } from "./money.ts";
+import { parseChecklist } from "./checklists.ts";
 
 export const jobInclude = {
   customer: true,
@@ -39,6 +40,7 @@ export function serializeJob(job: JobWithRelations) {
   return {
     ...job,
     laborHours: asNumber(job.laborHours),
+    checklist: parseChecklist(job.checklist, job.kind),
     partsUsed: job.partsUsed.map((part) => ({
       ...part,
       unitCost: asNumber(part.unitCost) ?? 0,
@@ -82,6 +84,9 @@ export async function applyJobStatus(jobId: string, nextStatus: JobStatus, actor
     if (!job.laborHours) {
       data.laborHours = laborHoursFor(job, now);
     }
+    if (job.kind === "maintenance") {
+      await scheduleNextMaintenance(job.customerId);
+    }
   }
   if (nextStatus === "cancelled") {
     data.completedAt = now;
@@ -110,4 +115,22 @@ export function calendarDate(timeZone = "Asia/Tashkent") {
     month: "2-digit",
     day: "2-digit",
   }).format(new Date());
+}
+
+export function addMonths(date: Date, months: number) {
+  const next = new Date(date.getTime());
+  next.setUTCMonth(next.getUTCMonth() + months);
+  return next;
+}
+
+async function scheduleNextMaintenance(customerId: string) {
+  const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+  if (!customer) {
+    return;
+  }
+  const months = customer.maintenanceIntervalMonths > 0 ? customer.maintenanceIntervalMonths : 3;
+  await prisma.customer.update({
+    where: { id: customerId },
+    data: { nextMaintenanceOn: addMonths(startOfDay(calendarDate()), months) },
+  });
 }

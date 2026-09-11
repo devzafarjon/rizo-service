@@ -29,6 +29,12 @@ enum Priority {
   urgent
 }
 
+enum JobKind {
+  installation
+  maintenance
+  repair
+}
+
 enum InvoiceStatus {
   draft
   sent
@@ -51,14 +57,16 @@ model User {
 }
 
 model Customer {
-  id        String            @id @default(cuid())
-  name      String
-  phone     String?
-  email     String?
-  notes     String?
-  createdAt DateTime          @default(now()) @map("created_at")
-  locations ServiceLocation[]
-  jobs      Job[]
+  id                         String            @id @default(cuid())
+  name                       String
+  phone                      String?
+  email                      String?
+  notes                      String?
+  maintenanceIntervalMonths  Int               @default(3) @map("maintenance_interval_months")
+  nextMaintenanceOn          DateTime?         @map("next_maintenance_on") @db.Date
+  createdAt                  DateTime          @default(now()) @map("created_at")
+  locations                  ServiceLocation[]
+  jobs                       Job[]
 
   @@map("customers")
 }
@@ -81,6 +89,9 @@ model Job {
   id                   String           @id @default(cuid())
   title                String
   description          String?
+  kind                 JobKind          @default(repair)
+  orderRef             String?          @map("order_ref")
+  checklist            Json             @default("[]")
   status               JobStatus        @default(new)
   priority             Priority         @default(medium)
   customerId           String           @map("customer_id")
@@ -102,6 +113,7 @@ model Job {
   invoices             Invoice[]
 
   @@index([status])
+  @@index([kind])
   @@index([assignedTechnicianId])
   @@index([scheduledDate])
   @@map("jobs")

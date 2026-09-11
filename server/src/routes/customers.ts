@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.ts";
 import { requireAuth, requireRole } from "../middleware/auth.ts";
+import { startOfDay } from "../lib/jobs.ts";
 
 export const customersRouter = Router();
 customersRouter.use(requireAuth, requireRole("admin", "dispatcher"));
@@ -11,6 +12,8 @@ const customerSchema = z.object({
   phone: z.string().trim().max(40).optional().or(z.literal("")),
   email: z.string().trim().max(120).optional().or(z.literal("")),
   notes: z.string().trim().max(2000).optional().or(z.literal("")),
+  maintenanceIntervalMonths: z.number().int().min(1).max(24).optional(),
+  nextMaintenanceOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
 });
 
 const locationSchema = z.object({
@@ -75,6 +78,8 @@ customersRouter.post("/", async (req, res) => {
       phone: parsed.data.phone || null,
       email: parsed.data.email || null,
       notes: parsed.data.notes || null,
+      maintenanceIntervalMonths: parsed.data.maintenanceIntervalMonths ?? 3,
+      nextMaintenanceOn: parsed.data.nextMaintenanceOn ? startOfDay(parsed.data.nextMaintenanceOn) : null,
     },
     include: { locations: true, _count: { select: { jobs: true } } },
   });
@@ -95,6 +100,12 @@ customersRouter.patch("/:id", async (req, res) => {
         ...(parsed.data.phone !== undefined ? { phone: parsed.data.phone || null } : {}),
         ...(parsed.data.email !== undefined ? { email: parsed.data.email || null } : {}),
         ...(parsed.data.notes !== undefined ? { notes: parsed.data.notes || null } : {}),
+        ...(parsed.data.maintenanceIntervalMonths !== undefined
+          ? { maintenanceIntervalMonths: parsed.data.maintenanceIntervalMonths }
+          : {}),
+        ...(parsed.data.nextMaintenanceOn !== undefined
+          ? { nextMaintenanceOn: parsed.data.nextMaintenanceOn ? startOfDay(parsed.data.nextMaintenanceOn) : null }
+          : {}),
       },
       include: { locations: true, _count: { select: { jobs: true } } },
     });
