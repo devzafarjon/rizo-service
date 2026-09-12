@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import { ApiError } from "../../lib/api";
+import { ApiError, isUnreachableApi } from "../../lib/api";
 import type { Role } from "../../lib/api";
 import { useAuth } from "./AuthContext";
 import { useToast } from "../../components/Toast";
@@ -47,6 +47,8 @@ export function LoginPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError(t("auth.invalidCredentials"));
+      } else if (isUnreachableApi(err)) {
+        setError(t("auth.apiUnreachable"));
       } else {
         setError(t("auth.unableToSignIn"));
       }
@@ -57,8 +59,8 @@ export function LoginPage() {
 
   return (
     <div className="min-h-dvh bg-white">
-      <header className="z-50 w-full md:p-4">
-        <nav className="mx-auto flex h-10 max-w-6xl items-center justify-end px-4 sm:px-6 lg:px-8">
+      <header className="z-50 w-full pt-[env(safe-area-inset-top)] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
+        <nav className="mx-auto flex min-h-11 max-w-6xl items-center justify-end px-3 sm:px-6 lg:px-8">
           <LanguageSwitcher />
         </nav>
       </header>
@@ -138,7 +140,7 @@ export function LoginPage() {
               <li key={account.email}>
                 <button
                   type="button"
-                  className="flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-100 px-3 py-2 font-bold text-[#B439FD] transition-colors hover:bg-gray-200"
+                  className="flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-100 px-3 py-2 text-sm font-bold break-all text-[#B439FD] transition-colors hover:bg-gray-200"
                   onClick={() => {
                     setEmail(account.email);
                     setPassword("password123");

@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { io, type Socket } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { apiBase } from "./config";
 import type { Job, JobStatus } from "./types";
 
 let socket: Socket | null = null;
 
 function getSocket() {
   if (!socket) {
-    socket = io({
+    socket = io(apiBase() || undefined, {
       path: "/socket.io",
       transports: ["websocket", "polling"],
     });

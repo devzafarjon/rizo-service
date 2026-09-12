@@ -119,16 +119,16 @@ export function JobQueue({
   const role = user?.role ?? "dispatcher";
 
   return (
-    <div>
+    <div className="min-w-0">
       <PageTitle
         title={title}
         subtitle={subtitle}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex w-full flex-wrap gap-2">
             <ScopeToggle mine={Boolean(mine)} />
             <ViewToggle view={view} onChange={setView} />
             {showCreate ? (
-              <Link to="/jobs/new" className="inline-flex min-h-11 items-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD]">
+              <Link to="/jobs/new" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD] sm:flex-none">
                 {t("jobs.new")}
               </Link>
             ) : null}
@@ -136,7 +136,7 @@ export function JobQueue({
         }
       />
 
-      <div className={`mb-6 grid gap-3 md:grid-cols-2 ${showTechnicianFilter || view === "list" ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+      <div className={`mb-6 grid gap-3 sm:grid-cols-2 ${showTechnicianFilter || view === "list" ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
         <TextField value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("kanban.search")} />
         <SelectField value={kind} onChange={(e) => setKind(e.target.value)} aria-label={t("jobs.kind")}>
           <option value="">{t("jobs.kind")}: {t("common.all")}</option>
@@ -206,10 +206,10 @@ function ScopeToggle({ mine }: { mine: boolean }) {
   const { t } = useI18n();
   return (
     <div className="inline-flex rounded-lg bg-gray-100 p-1">
-      <span className={`rounded-md px-3 py-2 text-sm font-bold ${mine ? "text-gray-400" : "bg-white text-[#9103E4]"}`}>
+      <span className={`rounded-md px-2 py-2 text-xs font-bold sm:px-3 sm:text-sm ${mine ? "text-gray-400" : "bg-white text-[#9103E4]"}`}>
         {t("kanban.allJobs")}
       </span>
-      <span className={`rounded-md px-3 py-2 text-sm font-bold ${mine ? "bg-white text-[#9103E4]" : "text-gray-400"}`}>
+      <span className={`rounded-md px-2 py-2 text-xs font-bold sm:px-3 sm:text-sm ${mine ? "bg-white text-[#9103E4]" : "text-gray-400"}`}>
         {t("kanban.myJobs")}
       </span>
     </div>
@@ -219,7 +219,7 @@ function ScopeToggle({ mine }: { mine: boolean }) {
 function ViewToggle({ view, onChange }: { view: "board" | "list"; onChange: (view: "board" | "list") => void }) {
   const { t } = useI18n();
   const pill = (active: boolean) =>
-    `rounded-md px-3 py-2 text-sm font-bold ${active ? "bg-white text-[#9103E4]" : "text-gray-500 hover:text-[#9103E4]"}`;
+    `rounded-md px-2 py-2 text-xs font-bold sm:px-3 sm:text-sm ${active ? "bg-white text-[#9103E4]" : "text-gray-500 hover:text-[#9103E4]"}`;
   return (
     <div className="inline-flex rounded-lg bg-gray-100 p-1">
       <button type="button" className={pill(view === "board")} onClick={() => onChange("board")}>

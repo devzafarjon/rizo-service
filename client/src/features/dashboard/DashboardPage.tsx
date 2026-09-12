@@ -53,13 +53,13 @@ export function DashboardPage() {
         subtitle={t("dashboard.welcome", { name: user?.name ?? "" })}
         actions={
           <>
-            <Link to="/jobs/new?kind=installation" className="inline-flex min-h-11 items-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD]">
+            <Link to="/jobs/new?kind=installation" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD] sm:w-auto">
               {t("customers.installOrder")}
             </Link>
-            <Link to="/jobs/new?kind=maintenance" className="inline-flex min-h-11 items-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200">
+            <Link to="/jobs/new?kind=maintenance" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200 sm:w-auto">
               {t("customers.scheduleMaintenance")}
             </Link>
-            <Link to="/dispatch" className="inline-flex min-h-11 items-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200">
+            <Link to="/dispatch" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200 sm:w-auto">
               {t("nav.dispatch")}
             </Link>
           </>

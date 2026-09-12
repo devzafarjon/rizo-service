@@ -33,7 +33,7 @@ export function PortalDashboardPage() {
         title={t("portal.dashTitle")}
         subtitle={t("portal.dashSubtitle", { name: customer?.name ?? "" })}
         actions={
-          <Link to="/portal/new" className="inline-flex min-h-11 items-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD]">
+          <Link to="/portal/new" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD] sm:w-auto">
             {t("portal.nav.new")}
           </Link>
         }
@@ -135,7 +135,7 @@ export function PortalRequestPage() {
             {t(portalStatusKey(job.status, job.submittedByCustomer))}
           </span>
         </div>
-        <h1 className="mt-4 text-3xl font-bold text-black">{job.title}</h1>
+        <h1 className="mt-4 text-2xl font-bold break-words text-black sm:text-3xl">{job.title}</h1>
         <p className="mt-3 text-gray-600">{job.description || "—"}</p>
         <dl className="mt-6 grid gap-3 text-sm">
           <div>

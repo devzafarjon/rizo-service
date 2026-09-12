@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -43,7 +43,17 @@ export function JobKanban({
   const { notify } = useToast();
   const queryClient = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  const [allowDrag, setAllowDrag] = useState(false);
+  const draggedIdRef = useRef<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const sync = () => setAllowDrag(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
 
   const grouped = useMemo(() => {
     const map = Object.fromEntries(JOB_STATUSES.map((status) => [status, [] as Job[]])) as Record<JobStatus, Job[]>;
@@ -92,11 +102,24 @@ export function JobKanban({
   }
 
   function onDragStart(event: DragStartEvent) {
+    draggedIdRef.current = String(event.active.id);
     setActiveId(String(event.active.id));
   }
 
+  function clearDragClick(jobId: string) {
+    window.setTimeout(() => {
+      if (draggedIdRef.current === jobId) {
+        draggedIdRef.current = null;
+      }
+    }, 400);
+  }
+
   function onDragCancel() {
+    const jobId = activeId;
     setActiveId(null);
+    if (jobId) {
+      clearDragClick(jobId);
+    }
   }
 
   function onDragEnd(event: DragEndEvent) {
@@ -104,6 +127,7 @@ export function JobKanban({
     const job = jobs.find((item) => item.id === jobId);
     const next = resolveStatus(event.over?.id ? String(event.over.id) : undefined);
     setActiveId(null);
+    clearDragClick(jobId);
     if (!job || !next || !canMoveJob(job.status, next, role)) {
       return;
     }
@@ -118,7 +142,7 @@ export function JobKanban({
       onDragCancel={onDragCancel}
       onDragEnd={onDragEnd}
     >
-      <div className="flex min-h-[32rem] gap-3 overflow-x-auto pb-4">
+      <div className="-mx-3 flex min-h-[28rem] w-auto min-w-0 max-w-none snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-3 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         {JOB_STATUSES.map((status) => (
           <KanbanColumn
             key={status}
@@ -128,7 +152,17 @@ export function JobKanban({
             accept={activeJob ? canMoveJob(activeJob.status, status, role) : false}
             title={t(`kanban.col.${status}` as MessageKey)}
             empty={t("kanban.empty")}
+            allowDrag={allowDrag}
+            role={role}
             onOpen={onOpen}
+            onMove={(jobId, next) => move.mutate({ jobId, status: next })}
+            consumeDragClick={(jobId) => {
+              if (draggedIdRef.current === jobId) {
+                draggedIdRef.current = null;
+                return true;
+              }
+              return false;
+            }}
           />
         ))}
       </div>
@@ -144,7 +178,11 @@ function KanbanColumn({
   accept,
   title,
   empty,
+  allowDrag,
+  role,
   onOpen,
+  onMove,
+  consumeDragClick,
 }: {
   status: JobStatus;
   jobs: Job[];
@@ -152,24 +190,28 @@ function KanbanColumn({
   accept: boolean;
   title: string;
   empty: string;
+  allowDrag: boolean;
+  role: Role;
   onOpen: (jobId: string) => void;
+  onMove: (jobId: string, status: JobStatus) => void;
+  consumeDragClick: (jobId: string) => boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
     <section
       ref={setNodeRef}
-      className={`flex w-[min(86vw,18rem)] shrink-0 flex-col rounded-2xl bg-gray-50 md:w-72 ${
+      className={`flex w-[min(82vw,17.5rem)] shrink-0 snap-start flex-col rounded-2xl bg-gray-50 sm:w-72 ${
         isOver && accept ? "ring-2 ring-[#B439FD]/40" : ""
       }`}
     >
       <header className="flex items-center justify-between gap-2 px-3 py-3">
-        <h2 className="text-sm font-bold text-black">{title}</h2>
+        <h2 className="truncate text-sm font-bold text-black">{title}</h2>
         <span className="inline-flex min-w-6 items-center justify-center rounded-lg bg-[#f6e9ff] px-2 py-0.5 text-xs font-bold text-[#9103E4]">
           {jobs.length}
         </span>
       </header>
-      <div className="flex max-h-[min(70dvh,40rem)] flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3">
+      <div className="flex max-h-[min(62dvh,38rem)] flex-1 flex-col gap-3 overflow-y-auto px-3 pb-3">
         {loading ? (
           <>
             <SkeletonCard />
@@ -180,38 +222,89 @@ function KanbanColumn({
             {empty}
           </p>
         ) : (
-          jobs.map((job) => <KanbanCard key={job.id} job={job} onOpen={onOpen} />)
+          jobs.map((job) => (
+            <KanbanCard
+              key={job.id}
+              job={job}
+              allowDrag={allowDrag}
+              role={role}
+              onOpen={onOpen}
+              onMove={onMove}
+              consumeDragClick={consumeDragClick}
+            />
+          ))
         )}
       </div>
     </section>
   );
 }
 
-function KanbanCard({ job, onOpen }: { job: Job; onOpen: (jobId: string) => void }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: job.id });
+function KanbanCard({
+  job,
+  allowDrag,
+  role,
+  onOpen,
+  onMove,
+  consumeDragClick,
+}: {
+  job: Job;
+  allowDrag: boolean;
+  role: Role;
+  onOpen: (jobId: string) => void;
+  onMove: (jobId: string, status: JobStatus) => void;
+  consumeDragClick: (jobId: string) => boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: job.id,
+    disabled: !allowDrag,
+  });
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
-      className={isDragging ? "cursor-grabbing opacity-40" : "cursor-grab"}
+      className={allowDrag ? (isDragging ? "cursor-grabbing opacity-40" : "cursor-grab") : undefined}
+      role={allowDrag ? undefined : "button"}
+      tabIndex={allowDrag ? undefined : 0}
       onClick={() => {
-        if (!isDragging) {
+        if (isDragging || consumeDragClick(job.id)) {
+          return;
+        }
+        onOpen(job.id);
+      }}
+      onKeyDown={(event) => {
+        if (allowDrag) {
+          return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
           onOpen(job.id);
         }
       }}
-      {...listeners}
-      {...attributes}
+      {...(allowDrag ? { ...listeners, ...attributes } : {})}
     >
-      <KanbanCardFace job={job} />
+      <KanbanCardFace job={job} allowDrag={allowDrag} role={role} onMove={onMove} />
     </div>
   );
 }
 
-function KanbanCardFace({ job, overlay }: { job: Job; overlay?: boolean }) {
+function KanbanCardFace({
+  job,
+  overlay,
+  allowDrag,
+  role,
+  onMove,
+}: {
+  job: Job;
+  overlay?: boolean;
+  allowDrag?: boolean;
+  role?: Role;
+  onMove?: (jobId: string, status: JobStatus) => void;
+}) {
   const { t } = useI18n();
   const waiting = !job.scheduledDate;
   const days = daysInQueue(job.createdAt);
+  const moves = role ? JOB_STATUSES.filter((status) => canMoveJob(job.status, status, role)) : [];
 
   return (
     <article
@@ -220,9 +313,9 @@ function KanbanCardFace({ job, overlay }: { job: Job; overlay?: boolean }) {
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold text-black">{job.customer.name}</p>
-        <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase ${KIND_CHIP[job.kind]}`}>
-          {t(`kind.${job.kind}` as MessageKey)}
+        <p className="min-w-0 truncate font-semibold text-black">{job.customer.name}</p>
+        <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${KIND_CHIP[job.kind]}`}>
+          {t(`kind.short.${job.kind}` as MessageKey)}
         </span>
       </div>
       <p className="mt-1 line-clamp-2 text-sm text-gray-600">{job.title}</p>
@@ -236,13 +329,30 @@ function KanbanCardFace({ job, overlay }: { job: Job; overlay?: boolean }) {
         <span className="shrink-0 text-[11px] font-bold text-gray-500">{t(`priority.${job.priority}` as MessageKey)}</span>
       </div>
       <p className="mt-2 text-xs text-gray-500">
-          {waiting ? (days === 0 ? t("kanban.waitingToday") : t("kanban.waitingDays", { days: String(days) })) : jobWhen(job)}
+        {waiting ? (days === 0 ? t("kanban.waitingToday") : t("kanban.waitingDays", { days: String(days) })) : jobWhen(job)}
         {job.kind === "installation" && job.orderRef ? ` · ${job.orderRef}` : ""}
       </p>
       {job.submittedByCustomer ? (
         <span className="mt-2 inline-flex rounded-lg bg-[#f6e9ff] px-2 py-0.5 text-[11px] font-bold text-[#9103E4]">
           {t("jobs.fromCustomer")}
         </span>
+      ) : null}
+      {!allowDrag && !overlay && onMove && moves.length > 0 ? (
+        <label className="mt-3 block" onClick={(event) => event.stopPropagation()}>
+          <span className="sr-only">{t("kanban.moveTo")}</span>
+          <select
+            className="h-10 w-full rounded-lg border border-gray-200 bg-white px-2 text-sm text-black"
+            value={job.status}
+            onChange={(event) => onMove(job.id, event.target.value as JobStatus)}
+          >
+            <option value={job.status}>{t(`kanban.col.${job.status}` as MessageKey)}</option>
+            {moves.map((status) => (
+              <option key={status} value={status}>
+                {t(`kanban.col.${status}` as MessageKey)}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
     </article>
   );

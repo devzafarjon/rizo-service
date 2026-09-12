@@ -109,7 +109,8 @@ export function InvoiceDetailPage() {
           </p>
           <p className="text-gray-600">{invoice.job.title}</p>
         </div>
-        <table className="mt-8 w-full text-left text-sm">
+        <div className="mt-8 overflow-x-auto">
+        <table className="w-full min-w-[18rem] text-left text-sm">
           <thead>
             <tr className="text-gray-500">
               <th className="pb-2 font-medium">{t("jobs.partName")}</th>
@@ -132,6 +133,7 @@ export function InvoiceDetailPage() {
             </tr>
           </tbody>
         </table>
+        </div>
         <p className="mt-6 text-right text-2xl font-bold text-black">
           {t("invoices.total")}: {money(invoice.amount, locale)}
         </p>

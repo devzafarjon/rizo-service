@@ -1,4 +1,5 @@
 import { ApiError } from "./api";
+import { apiUrl } from "./config";
 import type { PortalCustomer } from "./types";
 
 export const PORTAL_TOKEN_KEY = "fsm_portal_token";
@@ -25,7 +26,7 @@ export async function portalApi<T>(path: string, options: RequestInit = {}): Pro
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`/api/portal${path}`, {
+  const response = await fetch(apiUrl(`/api/portal${path}`), {
     ...options,
     headers,
   });

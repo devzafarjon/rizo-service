@@ -14,7 +14,7 @@ function roleKey(role: Role): MessageKey {
 }
 
 function desktopNavClass(isActive: boolean) {
-  return `inline-flex shrink-0 items-center whitespace-nowrap text-sm font-bold transition-colors xl:text-base ${
+  return `inline-flex shrink-0 items-center whitespace-nowrap text-sm font-bold transition-colors ${
     isActive ? "text-[#9103E4]" : "text-gray-600 hover:text-[#9103E4]"
   }`;
 }
@@ -32,7 +32,7 @@ export function AppShell() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const menuId = useId();
-  const wideBoard = location.pathname === "/jobs" || location.pathname === "/my-jobs";
+  const wideBoard = location.pathname === "/jobs" || location.pathname === "/my-jobs" || location.pathname === "/dispatch";
   useJobSocket();
 
   useEffect(() => {
@@ -43,13 +43,18 @@ export function AppShell() {
     if (!open) {
       return;
     }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
       }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   if (!user) {
@@ -66,10 +71,10 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
-      <header className="z-50 w-full shadow-[0_0_10px_rgba(0,0,0,0.1)] md:p-4">
-        <nav className="mx-auto flex h-10 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <p className="truncate text-xs text-black md:text-sm">
+    <div className="flex min-h-dvh min-w-0 flex-col bg-white">
+      <header className="z-50 w-full pt-[env(safe-area-inset-top)] shadow-[0_0_10px_rgba(0,0,0,0.1)] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
+        <nav className="mx-auto flex min-h-11 max-w-6xl items-center justify-between px-3 sm:px-6 lg:px-8">
+          <p className="min-w-0 truncate text-xs text-black md:text-sm">
             <span className="font-medium">{user.name}</span>
             <span className="hidden text-gray-500 sm:inline"> · {t(roleKey(user.role))}</span>
           </p>
@@ -79,10 +84,10 @@ export function AppShell() {
 
       <nav className="sticky top-0 z-40 mt-3 w-full font-bold">
         <div className="mx-auto max-w-6xl bg-white px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.1)] sm:px-6 md:rounded-2xl lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-2">
-            <RizoLogo className="h-16 w-16 shrink-0 object-contain" />
+          <div className="flex h-14 items-center justify-between gap-2 sm:h-16">
+            <RizoLogo className="h-12 w-12 shrink-0 object-contain sm:h-16 sm:w-16" />
 
-            <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 overflow-x-auto lg:flex xl:gap-6">
+            <div className="hidden min-w-0 flex-1 items-center justify-center gap-4 overflow-x-auto xl:flex">
               {items.map((item) => (
                 <NavLink key={item.to} to={item.to} className={({ isActive }) => desktopNavClass(isActive)}>
                   {t(item.labelKey)}
@@ -90,7 +95,7 @@ export function AppShell() {
               ))}
             </div>
 
-            <div className="hidden shrink-0 items-center lg:flex">
+            <div className="hidden shrink-0 items-center xl:flex">
               <button
                 type="button"
                 onClick={onLogout}
@@ -100,10 +105,10 @@ export function AppShell() {
               </button>
             </div>
 
-            <div className="z-20 lg:hidden">
+            <div className="z-20 xl:hidden">
               <button
                 type="button"
-                className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 aria-expanded={open}
                 aria-controls={menuId}
                 onClick={() => setOpen((value) => !value)}
@@ -115,7 +120,7 @@ export function AppShell() {
           </div>
 
           {open ? (
-            <div id={menuId} className="bg-white lg:hidden">
+            <div id={menuId} className="bg-white xl:hidden">
               <div className="space-y-1 px-2 pt-2 pb-3 sm:px-3">
                 {items.map((item) => (
                   <NavLink
@@ -143,9 +148,9 @@ export function AppShell() {
       </nav>
 
       <main
-        className={`mx-auto w-full flex-1 px-4 py-8 sm:px-6 lg:px-8 ${
+        className={`mx-auto w-full min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-8 lg:px-8 ${
           wideBoard ? "max-w-[1600px]" : "max-w-6xl"
-        } ${technician ? "pb-[max(2rem,env(safe-area-inset-bottom))]" : "pb-[max(4rem,env(safe-area-inset-bottom))]"}`}
+        } pb-[max(2rem,env(safe-area-inset-bottom))]`}
       >
         <Outlet />
       </main>

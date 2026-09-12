@@ -124,7 +124,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
   const closed = isClosedJob(job.status);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+    <div className="grid min-w-0 gap-6 lg:grid-cols-[1.2fr_0.8fr]">
       <Card dot={statusDot(job.status)}>
         <div className="flex flex-wrap gap-3">
           <KindBadge kind={job.kind} />
@@ -135,7 +135,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
             </span>
           ) : null}
         </div>
-        <h2 className="mt-3 text-2xl font-semibold text-black">{job.title}</h2>
+        <h2 className="mt-3 text-xl font-semibold break-words text-black sm:text-2xl">{job.title}</h2>
         <p className="mt-2 text-gray-600">{job.description || "—"}</p>
         <div className="mt-6 grid gap-3 text-sm">
           {job.kind === "installation" && job.orderRef ? (
@@ -248,13 +248,13 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
           <h3 className="text-xl font-semibold text-black">{t("jobs.parts")}</h3>
           {closed ? null : (
           <form
-            className="mt-4 grid gap-2 sm:grid-cols-3"
+            className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
             onSubmit={(event: FormEvent) => {
               event.preventDefault();
               partMut.mutate();
             }}
           >
-            <div className="sm:col-span-3">
+            <div className="sm:col-span-2 lg:col-span-3">
               <Label>{t("jobs.partName")}</Label>
               <TextField value={partName} onChange={(e) => setPartName(e.target.value)} required />
             </div>

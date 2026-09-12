@@ -1,3 +1,5 @@
+import { apiUrl } from "./config";
+
 export type Role = "dispatcher" | "technician";
 
 export type User = {
@@ -42,7 +44,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(apiUrl(`/api${path}`), {
     ...options,
     headers,
   });
@@ -57,4 +59,11 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   }
 
   return response.json() as Promise<T>;
+}
+
+export function isUnreachableApi(error: unknown) {
+  if (error instanceof TypeError) {
+    return true;
+  }
+  return error instanceof ApiError && (error.status === 404 || error.status === 502 || error.status === 503);
 }

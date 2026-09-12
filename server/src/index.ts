@@ -14,12 +14,19 @@ import { customerAuthRouter } from "./routes/customer-auth.ts";
 import { customerPortalRouter } from "./routes/customer-portal.ts";
 import { feedbackRouter } from "./routes/feedback.ts";
 import { prisma } from "./lib/prisma.ts";
+import { isAllowedOrigin } from "./lib/origins.ts";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
-const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
 
-app.use(cors({ origin: clientOrigin, credentials: true }));
+app.use(
+  cors({
+    origin(origin, next) {
+      next(null, isAllowedOrigin(origin));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/api/health", (_req, res) => {
@@ -43,7 +50,12 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: clientOrigin, credentials: true },
+  cors: {
+    origin(origin, next) {
+      next(null, isAllowedOrigin(origin));
+    },
+    credentials: true,
+  },
 });
 
 io.on("connection", (socket) => {

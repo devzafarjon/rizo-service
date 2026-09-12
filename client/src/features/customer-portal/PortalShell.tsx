@@ -28,6 +28,24 @@ export function PortalShell() {
     setOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   if (!customer) {
     return null;
   }
@@ -38,10 +56,10 @@ export function PortalShell() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-white">
-      <header className="z-50 w-full shadow-[0_0_10px_rgba(0,0,0,0.1)] md:p-4">
-        <nav className="mx-auto flex h-10 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <p className="truncate text-xs text-black md:text-sm">
+    <div className="flex min-h-dvh min-w-0 flex-col bg-white">
+      <header className="z-50 w-full pt-[env(safe-area-inset-top)] shadow-[0_0_10px_rgba(0,0,0,0.1)] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
+        <nav className="mx-auto flex min-h-11 max-w-6xl items-center justify-between px-3 sm:px-6 lg:px-8">
+          <p className="min-w-0 truncate text-xs text-black md:text-sm">
             <span className="font-medium">{customer.name}</span>
             <span className="hidden text-gray-500 sm:inline"> · {t("portal.shopAccount")}</span>
           </p>
@@ -51,8 +69,8 @@ export function PortalShell() {
 
       <nav className="sticky top-0 z-40 mt-3 w-full font-bold">
         <div className="mx-auto max-w-6xl bg-white px-3 py-1 shadow-[0_0_10px_rgba(0,0,0,0.1)] sm:px-6 md:rounded-2xl lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-2">
-            <RizoLogo className="h-16 w-16 shrink-0 object-contain" />
+          <div className="flex h-14 items-center justify-between gap-2 sm:h-16">
+            <RizoLogo className="h-12 w-12 shrink-0 object-contain sm:h-16 sm:w-16" />
             <div className="hidden min-w-0 flex-1 items-center justify-center gap-6 sm:flex">
               {LINKS.map((item) => (
                 <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => navClass(isActive)}>
@@ -69,7 +87,7 @@ export function PortalShell() {
             </button>
             <button
               type="button"
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-600 hover:bg-gray-100 sm:hidden"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 sm:hidden"
               aria-expanded={open}
               aria-controls={menuId}
               onClick={() => setOpen((value) => !value)}
@@ -106,7 +124,7 @@ export function PortalShell() {
         </div>
       </nav>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-8">
+      <main className="mx-auto w-full min-w-0 max-w-6xl flex-1 px-3 py-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-6 sm:py-8 lg:px-8">
         <Outlet />
       </main>
     </div>

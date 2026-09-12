@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "./prisma.ts";
+import { publicAppUrl } from "./origins.ts";
 
 export function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
@@ -39,7 +40,7 @@ export async function consumeCustomerToken(raw: string, purpose: "reset" | "veri
 }
 
 export function portalBaseUrl() {
-  return (process.env.CLIENT_ORIGIN ?? "http://localhost:5173").replace(/\/$/, "");
+  return (process.env.PUBLIC_APP_URL ?? publicAppUrl()).replace(/\/$/, "");
 }
 
 export function digits(value: string) {

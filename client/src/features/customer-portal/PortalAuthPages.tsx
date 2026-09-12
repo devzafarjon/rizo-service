@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { ApiError } from "../../lib/api";
+import { ApiError, isUnreachableApi } from "../../lib/api";
 import { portalApi } from "../../lib/portalApi";
 import { usePortalAuth } from "./PortalAuthContext";
 import { useI18n } from "../../i18n/LanguageContext";
@@ -15,8 +15,8 @@ const fieldClass =
 function PortalAuthFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-white">
-      <header className="z-50 w-full md:p-4">
-        <nav className="mx-auto flex h-10 max-w-6xl items-center justify-end px-4 sm:px-6 lg:px-8">
+      <header className="z-50 w-full pt-[env(safe-area-inset-top)] md:p-4 md:pt-[max(1rem,env(safe-area-inset-top))]">
+        <nav className="mx-auto flex min-h-11 max-w-6xl items-center justify-end px-3 sm:px-6 lg:px-8">
           <LanguageSwitcher />
         </nav>
       </header>
@@ -51,7 +51,13 @@ export function PortalLoginPage() {
       notify(t("auth.signedIn"));
       navigate("/portal");
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401 ? t("auth.invalidCredentials") : t("auth.unableToSignIn"));
+      if (err instanceof ApiError && err.status === 401) {
+        setError(t("auth.invalidCredentials"));
+      } else if (isUnreachableApi(err)) {
+        setError(t("auth.apiUnreachable"));
+      } else {
+        setError(t("auth.unableToSignIn"));
+      }
     } finally {
       setSubmitting(false);
     }

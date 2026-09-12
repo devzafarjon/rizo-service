@@ -21,7 +21,7 @@ export function LanguageSwitcher() {
     <div ref={rootRef} className="relative z-[1000]">
       <button
         type="button"
-        className={`flex items-center space-x-2 rounded-lg px-3 py-2 transition-all hover:bg-gray-100 ${
+        className={`flex min-h-11 items-center space-x-2 rounded-lg px-3 py-2 transition-all hover:bg-gray-100 ${
           open ? "bg-gray-100" : "bg-transparent"
         }`}
         aria-haspopup="listbox"
@@ -43,7 +43,7 @@ export function LanguageSwitcher() {
               type="button"
               role="option"
               aria-selected={code === locale}
-              className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm ${
+              className={`flex min-h-11 w-full items-center justify-between px-4 py-2.5 text-left text-sm ${
                 code === locale ? "bg-gray-100 font-bold text-[#9103E4]" : "font-medium text-gray-700 hover:bg-gray-100"
               }`}
               onClick={() => {

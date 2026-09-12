@@ -49,7 +49,7 @@ export function JobCard({
   const card = (
     <div className="relative overflow-hidden rounded-3xl bg-white p-5 shadow-[0_0_10px_rgba(0,0,0,0.1)] transition hover:shadow-[0_0_16px_rgba(0,0,0,0.12)]">
       <span className={`absolute top-4 right-4 h-3.5 w-3.5 rounded-full ${priorityDot(job.priority)}`} />
-      <p className="pr-6 font-semibold text-black">{job.title}</p>
+      <p className="pr-6 font-semibold break-words text-black">{job.title}</p>
       <p className="mt-1 text-sm text-gray-600">
         {job.customer.name} · {job.location.city}
         {job.kind === "installation" && job.orderRef ? ` · ${job.orderRef}` : ""}

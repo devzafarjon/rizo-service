@@ -44,7 +44,7 @@ export function CustomersPage() {
           {data.customers.map((customer) => (
             <Link key={customer.id} to={`/customers/${customer.id}`}>
               <Card>
-                <p className="text-xl font-semibold text-black">{customer.name}</p>
+                <p className="text-xl font-semibold break-words text-black">{customer.name}</p>
                 <p className="mt-2 text-sm text-gray-600">{customer.phone || customer.email || "—"}</p>
                 <p className="mt-1 text-sm text-gray-500">
                   {customer.locations?.length ?? 0} · {customer._count?.jobs ?? 0} {t("nav.jobs").toLowerCase()}
@@ -224,13 +224,13 @@ export function CustomerDetailPage() {
         subtitle={[customer.phone, customer.email].filter(Boolean).join(" · ")}
         actions={
           <>
-            <Link to={`/jobs/new?customerId=${customer.id}&kind=installation`} className="inline-flex min-h-11 items-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD]">
+            <Link to={`/jobs/new?customerId=${customer.id}&kind=installation`} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD] sm:w-auto">
               {t("customers.installOrder")}
             </Link>
-            <Link to={`/jobs/new?customerId=${customer.id}&kind=maintenance`} className="inline-flex min-h-11 items-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200">
+            <Link to={`/jobs/new?customerId=${customer.id}&kind=maintenance`} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200 sm:w-auto">
               {t("customers.scheduleMaintenance")}
             </Link>
-            <Link to={`/customers/${customer.id}/edit`} className="inline-flex min-h-11 items-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200">
+            <Link to={`/customers/${customer.id}/edit`} className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-gray-100 px-4 font-bold text-[#B439FD] hover:bg-gray-200 sm:w-auto">
               {t("common.edit")}
             </Link>
           </>
@@ -243,8 +243,8 @@ export function CustomerDetailPage() {
         {isMaintenanceDue(customer.nextMaintenanceOn) ? ` · ${t("customers.due")}` : ""}
       </p>
 
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-2xl font-semibold text-black">{t("customers.locations")}</h2>
+      <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-xl font-semibold text-black sm:text-2xl">{t("customers.locations")}</h2>
         <GhostButton onClick={() => setShowLocation(true)}>{t("customers.addLocation")}</GhostButton>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
