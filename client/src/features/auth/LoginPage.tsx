@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ApiError } from "../../lib/api";
 import type { Role } from "../../lib/api";
 import { useAuth } from "./AuthContext";
@@ -149,6 +149,11 @@ export function LoginPage() {
               </li>
             ))}
           </ul>
+          <p className="mt-6">
+            <Link to="/portal/login" className="font-bold text-[#B439FD] hover:text-[#9103E4]">
+              {t("auth.customerPortal")}
+            </Link>
+          </p>
         </div>
       </div>
     </div>

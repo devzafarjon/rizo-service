@@ -20,6 +20,7 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
+  const [shareNote, setShareNote] = useState(false);
   const [partName, setPartName] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unitCost, setUnitCost] = useState("");
@@ -47,9 +48,14 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
   });
 
   const noteMut = useMutation({
-    mutationFn: () => api<{ job: Job }>(`/jobs/${job.id}/notes`, { method: "POST", body: JSON.stringify({ noteText: note }) }),
+    mutationFn: () =>
+      api<{ job: Job }>(`/jobs/${job.id}/notes`, {
+        method: "POST",
+        body: JSON.stringify({ noteText: note, visibleToCustomer: shareNote }),
+      }),
     onSuccess: (result) => {
       setNote("");
+      setShareNote(false);
       notify(t("jobs.updated"));
       rememberJob(result);
     },
@@ -123,6 +129,11 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
         <div className="flex flex-wrap gap-3">
           <KindBadge kind={job.kind} />
           <StatusBadge status={job.status} />
+          {job.submittedByCustomer ? (
+            <span className="inline-flex items-center rounded-lg bg-[#f6e9ff] px-2 py-0.5 text-xs font-bold text-[#9103E4]">
+              {t("jobs.fromCustomer")}
+            </span>
+          ) : null}
         </div>
         <h2 className="mt-3 text-2xl font-semibold text-black">{job.title}</h2>
         <p className="mt-2 text-gray-600">{job.description || "—"}</p>
@@ -211,6 +222,10 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
             }}
           >
             <TextArea value={note} onChange={(e) => setNote(e.target.value)} placeholder={t("jobs.notePlaceholder")} />
+            <label className="mt-3 flex min-h-11 items-center gap-2 text-sm font-medium text-gray-700">
+              <input type="checkbox" checked={shareNote} onChange={(e) => setShareNote(e.target.checked)} />
+              {t("jobs.shareWithShop")}
+            </label>
             <PrimaryButton type="submit" className="mt-3" disabled={noteMut.isPending}>
               {t("common.add")}
             </PrimaryButton>
@@ -220,6 +235,9 @@ export function JobWorkspace({ job, backTo }: { job: Job; backTo: string }) {
             {job.notes.map((item) => (
               <li key={item.id} className="rounded-xl bg-gray-50 p-3 text-sm">
                 <p className="font-bold text-black">{item.user.name}</p>
+                {item.visibleToCustomer ? (
+                  <p className="text-xs font-bold text-[#9103E4]">{t("jobs.sharedWithShop")}</p>
+                ) : null}
                 <p className="text-gray-600">{item.noteText}</p>
               </li>
             ))}

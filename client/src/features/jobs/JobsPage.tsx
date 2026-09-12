@@ -2,107 +2,30 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
-import type { Customer, Job, JobKind, JobStatus, Priority, User } from "../../lib/types";
+import type { Customer, Job, JobKind, Priority, User } from "../../lib/types";
 import { isClosedJob } from "../../lib/format";
 import { useI18n } from "../../i18n/LanguageContext";
 import type { MessageKey } from "../../i18n/messages";
 import { useToast } from "../../components/Toast";
-import { EmptyState, LoadError } from "../../components/EmptyState";
+import { LoadError } from "../../components/EmptyState";
 import { Spinner } from "../../components/Spinner";
 import { Card, GhostButton, Label, PageTitle, PrimaryButton, SelectField, TextArea, TextField } from "../../components/ui";
-import { JobCard } from "../../components/JobCard";
 import { JobWorkspace } from "../../components/JobWorkspace";
+import { JobQueue } from "./JobQueue";
 
-const STATUSES: JobStatus[] = ["new", "scheduled", "in_progress", "completed", "cancelled", "invoiced"];
 const PRIORITIES: Priority[] = ["low", "medium", "high", "urgent"];
 const KINDS: JobKind[] = ["installation", "maintenance", "repair"];
 
 export function JobsPage() {
   const { t } = useI18n();
-  const [search, setSearch] = useSearchParams();
-  const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
-  const kind = search.get("kind") ?? "";
-  const [technicianId, setTechnicianId] = useState("");
-
-  function setKind(value: string) {
-    const next = new URLSearchParams(search);
-    if (value) {
-      next.set("kind", value);
-    } else {
-      next.delete("kind");
-    }
-    setSearch(next, { replace: true });
-  }
-  const params = new URLSearchParams();
-  if (q) params.set("q", q);
-  if (status) params.set("status", status);
-  if (kind) params.set("kind", kind);
-  if (technicianId) params.set("technicianId", technicianId);
-
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["jobs", q, status, kind, technicianId],
-    queryFn: () => api<{ jobs: Job[] }>(`/jobs?${params.toString()}`),
-  });
-  const techs = useQuery({
-    queryKey: ["technicians"],
-    queryFn: () => api<{ technicians: User[] }>("/dispatch/technicians"),
-  });
-
   return (
-    <div>
-      <PageTitle
-        title={t("jobs.title")}
-        subtitle={t("jobs.subtitle")}
-        actions={
-          <Link to="/jobs/new" className="inline-flex min-h-11 items-center rounded-lg bg-[#B439FD] px-4 font-bold text-white hover:bg-[#CA73FD]">
-            {t("jobs.new")}
-          </Link>
-        }
-      />
-      <div className="mb-6 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <TextField value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("common.search")} />
-        <SelectField value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="">{t("common.all")}</option>
-          {KINDS.map((item) => (
-            <option key={item} value={item}>
-              {t(`kind.${item}` as MessageKey)}
-            </option>
-          ))}
-        </SelectField>
-        <SelectField value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">{t("common.all")}</option>
-          {STATUSES.map((item) => (
-            <option key={item} value={item}>
-              {t(`status.${item}` as MessageKey)}
-            </option>
-          ))}
-        </SelectField>
-        <SelectField value={technicianId} onChange={(e) => setTechnicianId(e.target.value)}>
-          <option value="">{t("common.all")}</option>
-          {techs.data?.technicians.map((tech) => (
-            <option key={tech.id} value={tech.id}>
-              {tech.name}
-            </option>
-          ))}
-        </SelectField>
-      </div>
-      {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Spinner />
-        </div>
-      ) : isError ? (
-        <LoadError />
-      ) : !data?.jobs.length ? (
-        <EmptyState title={t("jobs.emptyTitle")} description={t("jobs.emptyDescription")} />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {data.jobs.map((job) => (
-            <JobCard key={job.id} job={job} to={`/jobs/${job.id}`} />
-          ))}
-        </div>
-      )}
-    </div>
+    <JobQueue
+      listPath="/jobs"
+      title={t("jobs.title")}
+      subtitle={t("jobs.subtitle")}
+      showTechnicianFilter
+      showCreate
+    />
   );
 }
 

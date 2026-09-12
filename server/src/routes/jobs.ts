@@ -55,6 +55,7 @@ function writableJob<T extends { assignedTechnicianId: string | null; status: Jo
 jobsRouter.get("/", async (req, res) => {
   const q = String(req.query.q ?? "").trim();
   const status = STATUSES.includes(String(req.query.status) as JobStatus) ? (req.query.status as JobStatus) : undefined;
+  const priority = PRIORITIES.includes(String(req.query.priority) as Priority) ? (req.query.priority as Priority) : undefined;
   const technicianId = String(req.query.technicianId ?? "");
   const kind = KINDS.includes(String(req.query.kind) as JobKind) ? (req.query.kind as JobKind) : undefined;
   const from = String(req.query.from ?? "");
@@ -70,6 +71,7 @@ jobsRouter.get("/", async (req, res) => {
     where: {
       ...(mine || req.user!.role === "technician" ? { assignedTechnicianId: req.user!.userId } : {}),
       ...(status ? { status } : {}),
+      ...(priority ? { priority } : {}),
       ...(technicianId ? { assignedTechnicianId: technicianId } : {}),
       ...(kind ? { kind } : {}),
       ...(from || to
@@ -284,7 +286,12 @@ jobsRouter.post("/:id/notes", async (req, res) => {
   }
 
   await prisma.jobNote.create({
-    data: { jobId: job.id, userId: req.user!.userId, noteText },
+    data: {
+      jobId: job.id,
+      userId: req.user!.userId,
+      noteText,
+      visibleToCustomer: Boolean(req.body?.visibleToCustomer),
+    },
   });
   const updated = await prisma.job.findUniqueOrThrow({ where: { id: job.id }, include: jobInclude });
   const serialized = serializeJob(updated);

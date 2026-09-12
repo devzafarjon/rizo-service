@@ -24,11 +24,14 @@ async function main() {
     create: { name: "Dilnoza Saidova", email: "tech2@rizo.local", role: "technician", phone: "+998 90 444 44 44", passwordHash },
   });
 
+  await prisma.feedback.deleteMany();
+  await prisma.customerAuthToken.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.partUsed.deleteMany();
   await prisma.jobPhoto.deleteMany();
   await prisma.jobNote.deleteMany();
   await prisma.job.deleteMany();
+  await prisma.sale.deleteMany();
   await prisma.serviceLocation.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.user.deleteMany({ where: { email: "admin@rizo.local" } });
@@ -42,6 +45,8 @@ async function main() {
       name: "Baraka Market",
       phone: "+998 71 200 10 10",
       email: "baraka@shop.uz",
+      passwordHash,
+      emailVerified: true,
       notes: "3 ta filial. RIZO kassa va tovar hisobi.",
       maintenanceIntervalMonths: 3,
       nextMaintenanceOn: tomorrow,
@@ -96,6 +101,29 @@ async function main() {
     include: { locations: true },
   });
 
+  const barakaSale = await prisma.sale.create({
+    data: {
+      customerId: baraka.id,
+      productName: "RIZO kassa + chek printer",
+      soldOn: yesterday,
+      notes: "Asosiy do‘kon",
+    },
+  });
+  await prisma.sale.create({
+    data: {
+      customerId: nur.id,
+      productName: "RIZO kassa + skanner",
+      soldOn: yesterday,
+    },
+  });
+  await prisma.sale.create({
+    data: {
+      customerId: fresh.id,
+      productName: "Tarozi integratsiyasi",
+      soldOn: yesterday,
+    },
+  });
+
   async function job(data: {
     title: string;
     description: string;
@@ -112,6 +140,8 @@ async function main() {
     startedAt?: Date;
     completedAt?: Date;
     laborHours?: number;
+    submittedByCustomer?: boolean;
+    relatedSaleId?: string;
   }) {
     const kind = data.kind ?? "repair";
     const { kind: _kind, orderRef, ...rest } = data;
@@ -237,12 +267,40 @@ async function main() {
     scheduledTimeStart: "16:00",
     scheduledTimeEnd: "17:30",
   });
+  await job({
+    title: "Chek printer ishlamayapti",
+    description: "Do‘kondan: kechagi smenadan beri chek chiqmayapti. Lenta bor.",
+    kind: "repair",
+    status: "new",
+    priority: "high",
+    customerId: baraka.id,
+    locationId: baraka.locations[0].id,
+    submittedByCustomer: true,
+    relatedSaleId: barakaSale.id,
+  });
+  const barakaDone = await job({
+    title: "Kassa drajverini yangilash",
+    description: "Printer drajveri yangilandi. Chek yana chiqyapti.",
+    kind: "repair",
+    status: "completed",
+    priority: "medium",
+    customerId: baraka.id,
+    locationId: baraka.locations[0].id,
+    assignedTechnicianId: tech1.id,
+    scheduledDate: yesterday,
+    scheduledTimeStart: "15:00",
+    scheduledTimeEnd: "16:00",
+    startedAt: new Date("2026-09-11T10:00:00.000Z"),
+    completedAt: new Date("2026-09-11T11:00:00.000Z"),
+    laborHours: 1,
+  });
 
   await prisma.jobNote.createMany({
     data: [
       { jobId: j2.id, userId: tech1.id, noteText: "Printer ulangan, drajver yangilanmoqda." },
-      { jobId: j1.id, userId: dispatcher.id, noteText: "Mijoz ertalab ochilishidan oldin kelishni so‘radi." },
-      { jobId: completed.id, userId: tech2.id, noteText: "3 kassir o‘qitildi. Hisobot Telegramga ulandi." },
+      { jobId: j1.id, userId: dispatcher.id, noteText: "Mijoz ertalab ochilishidan oldin kelishni so‘radi.", visibleToCustomer: true },
+      { jobId: completed.id, userId: tech2.id, noteText: "3 kassir o‘qitildi. Hisobot Telegramga ulandi.", visibleToCustomer: true },
+      { jobId: barakaDone.id, userId: tech1.id, noteText: "Drajver o‘rnatildi. Iltimos, kechki smenada chekni tekshiring.", visibleToCustomer: true },
     ],
   });
 
@@ -258,9 +316,19 @@ async function main() {
     data: { jobId: invoiced.id, amount: 420000, status: "sent" },
   });
 
+  await prisma.feedback.create({
+    data: {
+      jobId: invoiced.id,
+      customerId: fresh.id,
+      rating: 5,
+      comment: "Tarozi tez ulandi, kassirlar rozi.",
+    },
+  });
+
   console.log("Seeded demo users, customers, jobs, and invoices");
   console.log("  password: password123");
-  console.log("  dispatcher@rizo.local / tech@rizo.local / tech2@rizo.local");
+  console.log("  staff: dispatcher@rizo.local / tech@rizo.local / tech2@rizo.local");
+  console.log("  portal: baraka@shop.uz");
 }
 
 main()

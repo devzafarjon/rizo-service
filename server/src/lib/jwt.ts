@@ -14,9 +14,13 @@ export function signToken(payload: AuthUser) {
 }
 
 export function verifyToken(token: string): AuthUser {
-  const payload = jwt.verify(token, getSecret()) as Omit<AuthUser, "role"> & { role: string };
+  const payload = jwt.verify(token, getSecret()) as Omit<AuthUser, "role"> & { role?: string; scope?: string };
+  if (payload.scope === "customer") {
+    throw new Error("Staff token required");
+  }
   return {
-    ...payload,
+    userId: payload.userId,
+    email: payload.email,
     role: payload.role === "technician" ? "technician" : "dispatcher",
   };
 }

@@ -42,6 +42,7 @@ export type JobNote = {
   jobId: string;
   userId: string;
   noteText: string;
+  visibleToCustomer?: boolean;
   createdAt: string;
   user: { id: string; name: string };
 };
@@ -96,6 +97,44 @@ export type Job = {
   photos: JobPhoto[];
   partsUsed: PartUsed[];
   invoices: Invoice[];
+  submittedByCustomer?: boolean;
+};
+
+export type PortalSale = {
+  id: string;
+  productName: string;
+  soldOn: string;
+  notes: string | null;
+};
+
+export type PortalJob = {
+  id: string;
+  title: string;
+  description: string | null;
+  kind: JobKind;
+  status: JobStatus;
+  orderRef: string | null;
+  submittedByCustomer: boolean;
+  scheduledDate: string | null;
+  scheduledTimeStart: string | null;
+  scheduledTimeEnd: string | null;
+  createdAt: string;
+  completedAt: string | null;
+  location: { id: string; address: string; city: string };
+  technicianName: string | null;
+  relatedSale: { id: string; productName: string } | null;
+  notes: Array<{ id: string; noteText: string; createdAt: string }>;
+  payment: { id: string | null; amount: number; status: InvoiceStatus | "draft" } | null;
+  feedback: { id: string; rating: number; comment: string | null; createdAt: string } | null;
+};
+
+export type PortalCustomer = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  emailVerified: boolean;
+  locations?: Array<{ id: string; address: string; city: string }>;
 };
 
 export type DashboardData = {

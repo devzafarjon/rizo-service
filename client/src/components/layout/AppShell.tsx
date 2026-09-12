@@ -7,6 +7,7 @@ import type { MessageKey } from "../../i18n/messages";
 import { LanguageSwitcher } from "../LanguageSwitcher";
 import { RizoLogo } from "../RizoLogo";
 import { navForRole } from "./nav";
+import { useJobSocket } from "../../lib/socket";
 
 function roleKey(role: Role): MessageKey {
   return role === "dispatcher" ? "roles.dispatcher" : "roles.technician";
@@ -31,6 +32,8 @@ export function AppShell() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
   const menuId = useId();
+  const wideBoard = location.pathname === "/jobs" || location.pathname === "/my-jobs";
+  useJobSocket();
 
   useEffect(() => {
     setOpen(false);
@@ -140,9 +143,9 @@ export function AppShell() {
       </nav>
 
       <main
-        className={`mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8 ${
-          technician ? "pb-[max(2rem,env(safe-area-inset-bottom))]" : "pb-[max(4rem,env(safe-area-inset-bottom))]"
-        }`}
+        className={`mx-auto w-full flex-1 px-4 py-8 sm:px-6 lg:px-8 ${
+          wideBoard ? "max-w-[1600px]" : "max-w-6xl"
+        } ${technician ? "pb-[max(2rem,env(safe-area-inset-bottom))]" : "pb-[max(4rem,env(safe-area-inset-bottom))]"}`}
       >
         <Outlet />
       </main>

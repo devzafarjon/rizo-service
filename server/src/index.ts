@@ -10,6 +10,9 @@ import { jobsRouter } from "./routes/jobs.ts";
 import { dispatchRouter } from "./routes/dispatch.ts";
 import { invoicesRouter } from "./routes/invoices.ts";
 import { dashboardRouter } from "./routes/dashboard.ts";
+import { customerAuthRouter } from "./routes/customer-auth.ts";
+import { customerPortalRouter } from "./routes/customer-portal.ts";
+import { feedbackRouter } from "./routes/feedback.ts";
 import { prisma } from "./lib/prisma.ts";
 
 const app = express();
@@ -29,6 +32,9 @@ app.use("/api/jobs", jobsRouter);
 app.use("/api/dispatch", dispatchRouter);
 app.use("/api/invoices", invoicesRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/feedback", feedbackRouter);
+app.use("/api/portal/auth", customerAuthRouter);
+app.use("/api/portal", customerPortalRouter);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);

@@ -13,6 +13,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/jobs", labelKey: "nav.jobs", roles: ["dispatcher"] },
   { to: "/dispatch", labelKey: "nav.dispatch", roles: ["dispatcher"] },
   { to: "/invoices", labelKey: "nav.invoices", roles: ["dispatcher"] },
+  { to: "/feedback", labelKey: "nav.feedback", roles: ["dispatcher"] },
   { to: "/my-jobs", labelKey: "nav.myJobs", roles: ["technician"] },
 ];
 

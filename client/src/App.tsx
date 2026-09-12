@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LanguageProvider } from "./i18n/LanguageContext";
 import { AuthProvider } from "./features/auth/AuthContext";
+import { PortalAuthProvider } from "./features/customer-portal/PortalAuthContext";
 import { HomeRedirect, ProtectedRoute, RoleRoute } from "./features/auth/ProtectedRoute";
 import { LoginPage } from "./features/auth/LoginPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
@@ -13,6 +14,17 @@ import { InvoiceDetailPage, InvoicesPage } from "./features/invoices/InvoicesPag
 import { MyJobsPage, TechnicianJobPage } from "./features/technician/MyJobsPage";
 import { AppShell } from "./components/layout/AppShell";
 import { ToastProvider } from "./components/Toast";
+import { PortalGuard } from "./features/customer-portal/PortalGuard";
+import { PortalShell } from "./features/customer-portal/PortalShell";
+import {
+  PortalForgotPage,
+  PortalLoginPage,
+  PortalResetPage,
+  PortalSignupPage,
+  PortalVerifyPage,
+} from "./features/customer-portal/PortalAuthPages";
+import { PortalDashboardPage, PortalNewRequestPage, PortalRequestPage } from "./features/customer-portal/PortalPages";
+import { FeedbackPage } from "./features/feedback/FeedbackPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,10 +44,28 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <AuthProvider>
+          <PortalAuthProvider>
           <ToastProvider>
             <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/portal/login" element={<PortalLoginPage />} />
+                <Route path="/portal/signup" element={<PortalSignupPage />} />
+                <Route path="/portal/forgot" element={<PortalForgotPage />} />
+                <Route path="/portal/reset" element={<PortalResetPage />} />
+                <Route path="/portal/verify" element={<PortalVerifyPage />} />
+                <Route
+                  path="/portal"
+                  element={
+                    <PortalGuard>
+                      <PortalShell />
+                    </PortalGuard>
+                  }
+                >
+                  <Route index element={<PortalDashboardPage />} />
+                  <Route path="new" element={<PortalNewRequestPage />} />
+                  <Route path="requests/:id" element={<PortalRequestPage />} />
+                </Route>
                 <Route
                   element={
                     <ProtectedRoute>
@@ -55,6 +85,7 @@ export default function App() {
                   <Route path="/dispatch" element={<Office><DispatchPage /></Office>} />
                   <Route path="/invoices" element={<Office><InvoicesPage /></Office>} />
                   <Route path="/invoices/:id" element={<Office><InvoiceDetailPage /></Office>} />
+                  <Route path="/feedback" element={<Office><FeedbackPage /></Office>} />
                   <Route path="/my-jobs" element={<RoleRoute roles={["technician"]}><MyJobsPage /></RoleRoute>} />
                   <Route path="/my-jobs/:id" element={<RoleRoute roles={["technician"]}><TechnicianJobPage /></RoleRoute>} />
                 </Route>
@@ -63,6 +94,7 @@ export default function App() {
               </Routes>
             </BrowserRouter>
           </ToastProvider>
+          </PortalAuthProvider>
         </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>
