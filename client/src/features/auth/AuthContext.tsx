@@ -1,54 +1,38 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { api, clearToken, getToken, setToken, type User } from "../../lib/api";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { clearToken } from "../../lib/api";
+import { DEMO_STAFF, readStoredUser, writeStoredUser } from "../../lib/demoAuth";
+import type { Role, User } from "../../lib/types";
 
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  enter: (role: Role) => User;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    api<{ user: User }>("/auth/me")
-      .then((data) => setUser(data.user))
-      .catch(() => {
-        clearToken();
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const [user, setUser] = useState<User | null>(() => readStoredUser());
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      loading,
-      login: async (email, password) => {
-        const data = await api<{ token: string; user: User }>("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email, password }),
-        });
-        setToken(data.token);
-        setUser(data.user);
-        return data.user;
+      loading: false,
+      enter: (role) => {
+        const next = DEMO_STAFF[role];
+        clearToken();
+        writeStoredUser(next);
+        setUser(next);
+        return next;
       },
       logout: () => {
         clearToken();
+        writeStoredUser(null);
         setUser(null);
       },
     }),
-    [user, loading],
+    [user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

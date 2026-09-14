@@ -239,11 +239,7 @@ export function PortalNewRequestPage() {
     queryKey: ["portal-sales"],
     queryFn: () => portalApi<{ sales: PortalSale[] }>("/sales"),
   });
-  const me = useQuery({
-    queryKey: ["portal-me"],
-    queryFn: () => portalApi<{ customer: NonNullable<typeof customer> }>("/auth/me"),
-  });
-  const locations = me.data?.customer.locations ?? customer?.locations ?? [];
+  const locations = customer?.locations ?? [];
 
   useEffect(() => {
     if (!locationId && locations[0]?.id) {

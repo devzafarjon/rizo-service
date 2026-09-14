@@ -1,4 +1,4 @@
-import { apiUrl } from "./config";
+import { ApiError, handleStaffApi } from "./localApi";
 
 export type Role = "dispatcher" | "technician";
 
@@ -11,6 +11,7 @@ export type User = {
 };
 
 export const TOKEN_KEY = "fsm_token";
+export { ApiError };
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -24,41 +25,8 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-export class ApiError extends Error {
-  status: number;
-
-  constructor(message: string, status: number) {
-    super(message);
-    this.name = "ApiError";
-    this.status = status;
-  }
-}
-
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
-  const headers = new Headers(options.headers);
-  if (!headers.has("Content-Type") && options.body) {
-    headers.set("Content-Type", "application/json");
-  }
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  const response = await fetch(apiUrl(`/api${path}`), {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new ApiError(body?.error ?? "Request failed", response.status);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json() as Promise<T>;
+  return handleStaffApi(path, options) as T;
 }
 
 export function isUnreachableApi(error: unknown) {

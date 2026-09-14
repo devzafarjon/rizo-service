@@ -16,13 +16,7 @@ import { AppShell } from "./components/layout/AppShell";
 import { ToastProvider } from "./components/Toast";
 import { PortalGuard } from "./features/customer-portal/PortalGuard";
 import { PortalShell } from "./features/customer-portal/PortalShell";
-import {
-  PortalForgotPage,
-  PortalLoginPage,
-  PortalResetPage,
-  PortalSignupPage,
-  PortalVerifyPage,
-} from "./features/customer-portal/PortalAuthPages";
+import { PortalLoginPage } from "./features/customer-portal/PortalAuthPages";
 import { PortalDashboardPage, PortalNewRequestPage, PortalRequestPage } from "./features/customer-portal/PortalPages";
 import { FeedbackPage } from "./features/feedback/FeedbackPage";
 
@@ -50,10 +44,10 @@ export default function App() {
               <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/portal/login" element={<PortalLoginPage />} />
-                <Route path="/portal/signup" element={<PortalSignupPage />} />
-                <Route path="/portal/forgot" element={<PortalForgotPage />} />
-                <Route path="/portal/reset" element={<PortalResetPage />} />
-                <Route path="/portal/verify" element={<PortalVerifyPage />} />
+                <Route path="/portal/signup" element={<Navigate to="/portal/login" replace />} />
+                <Route path="/portal/forgot" element={<Navigate to="/portal/login" replace />} />
+                <Route path="/portal/reset" element={<Navigate to="/portal/login" replace />} />
+                <Route path="/portal/verify" element={<Navigate to="/portal/login" replace />} />
                 <Route
                   path="/portal"
                   element={
